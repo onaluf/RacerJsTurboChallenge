@@ -1,7 +1,57 @@
+// RequestAnimationFrame polyfill by Paul Irish and Erik Möller 
+// (http://paulirish.com/2011/requestanimationframe-for-smart-animating/)
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = 
+          window[vendors[x]+'CancelAnimationFrame'] || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+ 
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+ 
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
+
+// Fullscreen API wrapper from MDN (https://developer.mozilla.org/en-US/docs/DOM/Using_fullscreen_mode)
+function toggleFullScreen() {
+	if ((document.fullscreenElement && document.fullscreenElement !== null) ||    // alternative standard method
+      (!document.mozFullScreenElement && !document.webkitFullscreenElement)) {  // current working methods
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    } else if (document.documentElement.mozRequestFullScreen) {
+      document.documentElement.mozRequestFullScreen();
+    } else if (document.documentElement.webkitRequestFullscreen) {
+      document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+    }
+  } else {
+    if (document.cancelFullScreen) {
+      document.cancelFullScreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.webkitCancelFullScreen) {
+      document.webkitCancelFullScreen();
+    }
+  }
+}
+
+// The game itself
 var game = (function(){
     
     var r = Math.random;
-    
+   	
     // -----------------------------
     // ---  closure scoped vars  ---
     // -----------------------------
@@ -9,6 +59,7 @@ var game = (function(){
     var context;
     var keys = [];
     var startTime;
+    var previousTimestamp;
     var lastDelta = 0;
     var currentTimeString = "";
     
@@ -105,6 +156,11 @@ var game = (function(){
         canvas.height = render.height;
         canvas.width = render.width;
         
+        // nearest neighbor interpollation
+        context.imageSmoothingEnabled = false;
+        context.webkitImageSmoothingEnabled = false;
+        context.mozImageSmoothingEnabled = false;
+        
         resize();
         $(window).resize(resize);    
         
@@ -116,6 +172,10 @@ var game = (function(){
             keys[e.keyCode] = false;
         });
         generateRoad();
+        
+        // Request fullscreen mode
+        //toggleFullScreen();
+        //canvas.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
     };
     
     //renders Splash Frame
@@ -132,13 +192,19 @@ var game = (function(){
         drawString("font: spicypixel.net",{x: 70, y: 140});
         if(keys[32]){
             clearInterval(splashInterval);
-            gameInterval = setInterval(renderGameFrame, 30);
+
+      		window.requestAnimationFrame(renderGameFrame);
+      		previousTimestamp = Date.now();
+            //gameInterval = setInterval(renderGameFrame, 30);
             startTime= new Date();
         }
     }
     
     //renders one frame
-    var renderGameFrame = function(){
+    var renderGameFrame = function(timestamp){
+        window.requestAnimationFrame(renderGameFrame);
+        var delta = timestamp - previousTimestamp;
+        previousTimestamp = timestamp;
         
         // Clean screen
         context.fillStyle = "#dc9";
@@ -165,13 +231,13 @@ var game = (function(){
         }
         player.speed = Math.max(player.speed, 0); //cannot go in reverse
         player.speed = Math.min(player.speed, player.maxSpeed); //maximum speed
-        player.position += player.speed;
+        player.position += player.speed * (delta / 30);
         
         // car turning
         if (keys[37]) {
             // 37 left
             if(player.speed > 0){
-                player.posx -= player.turning;
+                player.posx -= player.turning * (delta / 30);
             }
             var carSprite = {
                 a: car_4,
@@ -181,7 +247,7 @@ var game = (function(){
         } else if (keys[39]) {
             // 39 right
             if(player.speed > 0){
-                player.posx += player.turning;
+                player.posx += player.turning * (delta / 30);
             }
             var carSprite = {
                 a: car_8,
