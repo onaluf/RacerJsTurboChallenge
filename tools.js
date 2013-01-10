@@ -148,6 +148,7 @@ tools.canvasResize = function(){
     }
     
     var domCanvas = $("#c")[0];
+    var domContext = domCanvas.getContext('2d')
     var ratio = data.render.width / data.render.height;
     
     if (ws.w / ws.h > ratio) {
@@ -159,6 +160,11 @@ tools.canvasResize = function(){
         domCanvas.height = ws.w / ratio;
         domCanvas.width = ws.w;
     }
+    
+    domContext.imageSmoothingEnabled = false;
+    domContext.webkitImageSmoothingEnabled = false;
+    domContext.mozImageSmoothingEnabled = false;
+    
     
     $("#c").css({
         top: (ws.h - domCanvas.height) / 2,

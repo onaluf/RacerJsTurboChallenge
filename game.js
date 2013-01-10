@@ -1,6 +1,6 @@
 // The game itself
 var game = (function(){
-	var gameState = "intro";
+	var gameState = "race"; // intro
 	
 	// this is the list of rendererr indexed by the game state they work for
 	var previousTimestamp;
@@ -91,10 +91,7 @@ var game = (function(){
 	];
 	var render = function(timestamp){
 	    // scalling
-	    var domCanvas = $("#c")[0];
-        var context = domCanvas.getContext('2d');
-        
-        context.drawImage(canvas, 0, 0, $(domCanvas).width(), $(domCanvas).height());
+        domContext.drawImage(canvas, 0, 0, domCanvas.width, domCanvas.height);
         
         // call the correct renderer:
         renderer[gameState](timestamp);
@@ -143,28 +140,37 @@ var game = (function(){
 	        if(keys[32]){
 	        	gameState = "race";
 	      		previousTimestamp = Date.now();
-	            startTime= new Date();
+	            startTime = new Date.now();
 	        }
 	        window.requestAnimationFrame(render);
 		},
 		race : function(timestamp){
 	        window.requestAnimationFrame(render);
-	        var delta = timestamp - previousTimestamp;
+	        var deltaT = (timestamp - previousTimestamp) / 1000;
 	        previousTimestamp = timestamp;
 	        
 	        // --------------------------
 	        // -- Update the car state --
 	        // --------------------------
 	        
-	        if (Math.abs(lastDelta) > 130){
+	        if (Math.abs(lastDelta) > 130){ // if the player is outside of the road
+	        	if (keys[40]) { // 40 down
+	                player.speed -= player.breaking * deltaT;
+	            }
 	            if (player.speed > 3) {
 	                player.speed -= 0.2;
+	            } else {
+	            	if (keys[38]) { // 38 up
+		                player.speed += player.acceleration * deltaT;
+		            } else {
+		                player.speed -= player.deceleration * deltaT;
+		            }
 	            }
 	        } else {
 	            // read acceleration controls
 	            if (keys[38]) { // 38 up
 	                //player.position += 0.1;
-	                player.speed += player.acceleration;
+	                player.speed += player.acceleration * delta / 30.0;
 	            } else if (keys[40]) { // 40 down
 	                player.speed -= player.breaking;
 	            } else {
@@ -173,7 +179,7 @@ var game = (function(){
 	        }
 	        player.speed = Math.max(player.speed, 0); //cannot go in reverse
 	        player.speed = Math.min(player.speed, player.maxSpeed); //maximum speed
-	        player.position += player.speed * (delta / 30);
+	        player.position += player.speed * (delta / 30.0);
 	        
 	        // car turning
 	        if (keys[37]) {
@@ -296,8 +302,7 @@ var game = (function(){
 	        // --     Draw the hud     --
 	        // --------------------------        
 	        tools.draw.string(context, spritesheet, ""+Math.round(absoluteIndex/(road.length-data.render.depthOfField)*100)+"%",{x: 287, y: 1});
-	        var now = new Date();
-	        var diff = now.getTime() - startTime.getTime();
+	        var diff = Date.now() - startTime;
 	        
 	        var min = Math.floor(diff / 60000);
 	        
@@ -319,6 +324,8 @@ var game = (function(){
     // -----------------------------
     // ---  closure scoped vars  ---
     // -----------------------------
+	var domCanvas;
+	var domContext;
     var canvas;
     var context;
     var keys = [];
@@ -335,7 +342,7 @@ var game = (function(){
         position: 10,
         speed: 0,
         acceleration: 0.05,
-        deceleration: 0.3,
+        deceleration: 0.1,
         breaking: 0.6,
         turning: 5.0,
         posx: 0,
@@ -349,6 +356,9 @@ var game = (function(){
     //initialize the game
     var init = function(){
         // configure canvas
+        domCanvas = $("#c")[0];
+        domContext = domCanvas.getContext('2d');
+        
         canvas = document.createElement("canvas");//$("#c")[0];
         context = canvas.getContext('2d');
         
@@ -359,8 +369,7 @@ var game = (function(){
         context.imageSmoothingEnabled = false;
         context.webkitImageSmoothingEnabled = false;
         context.mozImageSmoothingEnabled = false;
-        var domCanvas = $("#c")[0];
-        var domContext = canvas.getContext('2d');
+        
         domContext.imageSmoothingEnabled = false;
         domContext.webkitImageSmoothingEnabled = false;
         domContext.mozImageSmoothingEnabled = false;
