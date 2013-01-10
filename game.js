@@ -1,34 +1,154 @@
 // The game itself
 var game = (function(){
-	var gameState = "menu";
+	var gameState = "intro";
 	
 	// this is the list of rendererr indexed by the game state they work for
 	var previousTimestamp;
+	var introScreens  = [
+        {
+            duration: 4500,
+            fadein:   1500,
+            fadeout:  500,
+            clean:   function () {
+                context.fillStyle = "rgb(0,0,0)";
+                context.fillRect(0, 0, data.render.width, data.render.height);
+            },
+            render:  function (percent){
+                tools.draw.image(context, data.intro.ogam, 0, 100, 1);
+            }
+        },{
+            duration: 3500,
+            fadein:   1500,
+            fadeout:  500,
+            clean:   function () {
+                context.fillStyle = "rgb(0,0,0)";
+                context.fillRect(0, 0, data.render.width, data.render.height);
+            },
+            render:  function (percent){
+                tools.draw.image(context, data.intro.hbe, 0, 50, 1);
+            }
+        },{
+            duration: 3000,
+            fadein:   1000,
+            fadeout:  0,
+            clean:   function () {
+                context.fillStyle = "rgb(0,0,0)";
+                context.fillRect(0, 0, data.render.width, data.render.height);
+            },
+            render:  function (percent){
+                tools.draw.image(context, data.intro.road, 0, 0, 1);
+            }
+        },{
+            duration: 4000,
+            fadein:   500,
+            fadeout:  500,
+            clean:   function () {
+                tools.draw.image(context, data.intro.road, 0, 0, 1);
+            },
+            render:  function (percent){
+                tools.draw.string(context, spritesheet, "Code + Art",{x: 115, y: 90});
+                tools.draw.string(context, spritesheet, "by",{x: 152, y: 100});
+                tools.draw.string(context, spritesheet, "Selim Arsever",{x: 105, y: 110});
+            }
+        },{
+            duration: 4000,
+            fadein:   500,
+            fadeout:  500,
+            clean:   function () {
+                tools.draw.image(context, data.intro.road, 0, 0, 1);
+            },
+            render:  function (percent){
+                tools.draw.string(context, spritesheet, "Music",{x: 140, y: 90});
+                tools.draw.string(context, spritesheet, "by",{x: 152, y: 100});
+                tools.draw.string(context, spritesheet, "Ashtom",{x: 137, y: 110});
+            }
+        },{
+            duration: 4000,
+            fadein:   500,
+            fadeout:  500,
+            clean:   function () {
+                tools.draw.image(context, data.intro.road, 0, 0, 1);
+            },
+            render:  function (percent){
+                tools.draw.string(context, spritesheet, "Fonts",{x: 140, y: 90});
+                tools.draw.string(context, spritesheet, "by",{x: 152, y: 100});
+                tools.draw.string(context, spritesheet, "spicypixel.net",{x: 105, y: 110});
+                tools.draw.string(context, spritesheet, "and",{x: 149, y: 120});
+                tools.draw.string(context, spritesheet, "???",{x: 137, y: 130});
+            }
+        },{
+            duration: 2000,
+            fadein:   0,
+            fadeout:  0,
+            clean:   function () {
+                tools.draw.image(context, data.intro.road, 0, 0, 1);
+            },
+            render:  function (percent){
+                var ratio = 20 * Math.pow(Math.max(0.0, percent / 100.0 - 0.2), 3);
+                tools.draw.image(context, data.intro.car, 320.0 * (1.0-ratio) / 2.0, 80 - 30 * ratio, ratio);
+            }
+        }
+	];
+	var render = function(timestamp){
+	    // scalling
+	    var domCanvas = $("#c")[0];
+        var context = domCanvas.getContext('2d');
+        
+        context.drawImage(canvas, 0, 0, $(domCanvas).width(), $(domCanvas).height());
+        
+        // call the correct renderer:
+        renderer[gameState](timestamp);
+	}
 	var renderer = {
 		intro : function (timestamp){
+			window.requestAnimationFrame(render);
 			
+			var startTime = timestamp - previousTimestamp;
+            var olderScreen = 0;
+            var rendered = false;
+            for(var i=0; i < introScreens.length; i ++){
+                var screen = introScreens[i];
+                var time = startTime - olderScreen;
+
+                if(time < screen.duration){
+                    rendered = true;
+                    context.globalAlpha = 1.0;
+                    screen.clean();
+                    
+                    if(time < screen.fadein){
+                        context.globalAlpha = time / screen.fadein;
+                    } else if (time > screen.duration - screen.fadeout){
+                        context.globalAlpha = 1 - (time - screen.duration + screen.fadeout) / screen.fadeout;
+                    } else {
+                        context.globalAlpha = 1.0
+                    }
+                    screen.render(time / screen.duration * 100.0);
+                    break;
+                } else {
+                    olderScreen += screen.duration;
+                }
+            }
+			if(!rendered){
+			    gameState = "menu";
+			    context.globalAlpha = 1.0;
+			}
 		}, 
 		menu : function (timestamp){
 	        context.fillStyle = "rgb(0,0,0)";
 	        context.fillRect(0, 0, data.render.width, data.render.height);
 	        
-	        context.drawImage(spritesheet,  357, 9, 115, 20, 100, 20, 115, 40);
+	        tools.draw.image(context, data.intro.rjstc, 64, 30, 1);
 	        
-	        tools.draw.string(context, spritesheet, "Instructions:",{x: 100, y: 90});
-	        tools.draw.string(context, spritesheet, "space to start, arrows to drive",{x: 30, y: 100});
-	        tools.draw.string(context, spritesheet, "Credits:",{x: 120, y: 120});
-	        tools.draw.string(context, spritesheet, "code, art: Selim Arsever",{x: 55, y: 130});
-	        tools.draw.string(context, spritesheet, "font: spicypixel.net",{x: 70, y: 140});
-	        
+	        tools.draw.string(context, spritesheet, "press space",{x: 120, y: 170});
 	        if(keys[32]){
 	        	gameState = "race";
 	      		previousTimestamp = Date.now();
 	            startTime= new Date();
 	        }
-	        window.requestAnimationFrame(renderer[gameState]);
+	        window.requestAnimationFrame(render);
 		},
 		race : function(timestamp){
-	        window.requestAnimationFrame(renderer[gameState]);
+	        window.requestAnimationFrame(render);
 	        var delta = timestamp - previousTimestamp;
 	        previousTimestamp = timestamp;
 	        
@@ -229,7 +349,7 @@ var game = (function(){
     //initialize the game
     var init = function(){
         // configure canvas
-        canvas = $("#c")[0];
+        canvas = document.createElement("canvas");//$("#c")[0];
         context = canvas.getContext('2d');
         
         canvas.height = data.render.height;
@@ -239,10 +359,18 @@ var game = (function(){
         context.imageSmoothingEnabled = false;
         context.webkitImageSmoothingEnabled = false;
         context.mozImageSmoothingEnabled = false;
+        var domCanvas = $("#c")[0];
+        var domContext = canvas.getContext('2d');
+        domContext.imageSmoothingEnabled = false;
+        domContext.webkitImageSmoothingEnabled = false;
+        domContext.mozImageSmoothingEnabled = false;
+        
         
         // pseudo full screen mode
-        tools.resize();
-        $(window).resize(tools.resize);    
+        tools.canvasResize();
+        $(window).resize(tools.canvasResize);
+        //tools.resize();
+        //$(window).resize(tools.resize);    
         
         //register key handeling:
         $(document).keydown(function(e){
@@ -341,9 +469,10 @@ var game = (function(){
             init();
             spritesheet = new Image();
             spritesheet.onload = function(){
-                window.requestAnimationFrame(renderer[gameState]);
+                previousTimestamp = Date.now();
+                window.requestAnimationFrame(render);
             };
-            spritesheet.src = "spritesheet.high.png";
+            spritesheet.src = "spritesheet.complete.png";
         }
     }
 }());

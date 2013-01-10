@@ -16,6 +16,7 @@ data.road = {
     segmentSize:     5,
     segmentPerColor: 4,
 }
+
 //Level definition
 data.levels = {
 	desert : {
@@ -50,6 +51,41 @@ data.levels = {
 	}
 }
 
+// images for the intro
+data.intro  = {
+    road : { 
+        x: 0,
+        y: 168,
+        w: 320,
+        h: 240
+    },
+    car : { 
+        x: 0,
+        y: 409,
+        w: 320,
+        h: 231
+    },
+    ogam : { 
+        x: 0,
+        y: 640,
+        w: 320,
+        h: 17
+    },
+    hbe : { 
+        x: 0,
+        y: 657,
+        w: 320,
+        h: 78
+    },
+    rjstc : { 
+        x: 320,
+        y: 168,
+        w: 192,
+        h: 125
+    }
+}
+
+// general purpose sprites
 data.sprites = {
 	car : { 
         x: 0,

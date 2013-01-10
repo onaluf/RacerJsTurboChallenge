@@ -141,6 +141,31 @@ tools.resize = function(){
     });
 };
 
+tools.canvasResize = function(){
+    ws = {
+        w: $(window).width(),
+        h: $(window).height()
+    }
+    
+    var domCanvas = $("#c")[0];
+    var ratio = data.render.width / data.render.height;
+    
+    if (ws.w / ws.h > ratio) {
+        
+        domCanvas.height = ws.h;
+        domCanvas.width = ws.h * ratio;
+    }
+    else {
+        domCanvas.height = ws.w / ratio;
+        domCanvas.width = ws.w;
+    }
+    
+    $("#c").css({
+        top: (ws.h - domCanvas.height) / 2,
+        left: (ws.w - domCanvas.width) / 2
+    });
+}
+
 // Draw function: function that draw something on screen
 tools.draw = {
 	// Drawing primitive
