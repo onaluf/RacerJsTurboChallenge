@@ -1,6 +1,6 @@
 // The game itself
 var game = (function(){
-	var gameState = "race"; // intro
+	var gameState = "intro"; // intro
 	
 	// this is the list of rendererr indexed by the game state they work for
 	var previousTimestamp;
@@ -89,13 +89,16 @@ var game = (function(){
             }
         }
 	];
+	
 	var render = function(timestamp){
 	    // scalling
         domContext.drawImage(canvas, 0, 0, domCanvas.width, domCanvas.height);
         
         // call the correct renderer:
         renderer[gameState](timestamp);
+        control(timestamp);
 	}
+	
 	var renderer = {
 		intro : function (timestamp){
 			window.requestAnimationFrame(render);
@@ -137,79 +140,31 @@ var game = (function(){
 	        tools.draw.image(context, data.intro.rjstc, 64, 30, 1);
 	        
 	        tools.draw.string(context, spritesheet, "press space",{x: 120, y: 170});
-	        if(keys[32]){
-	        	gameState = "race";
-	      		previousTimestamp = Date.now();
-	            startTime = new Date.now();
-	        }
+	        
 	        window.requestAnimationFrame(render);
 		},
 		race : function(timestamp){
 	        window.requestAnimationFrame(render);
-	        var deltaT = (timestamp - previousTimestamp) / 1000;
-	        previousTimestamp = timestamp;
-	        
-	        // --------------------------
-	        // -- Update the car state --
-	        // --------------------------
-	        
-	        if (Math.abs(lastDelta) > 130){ // if the player is outside of the road
-	        	if (keys[40]) { // 40 down
-	                player.speed -= player.breaking * deltaT;
-	            }
-	            if (player.speed > 3) {
-	                player.speed -= 0.2;
-	            } else {
-	            	if (keys[38]) { // 38 up
-		                player.speed += player.acceleration * deltaT;
-		            } else {
-		                player.speed -= player.deceleration * deltaT;
-		            }
-	            }
-	        } else {
-	            // read acceleration controls
-	            if (keys[38]) { // 38 up
-	                //player.position += 0.1;
-	                player.speed += player.acceleration * delta / 30.0;
-	            } else if (keys[40]) { // 40 down
-	                player.speed -= player.breaking;
-	            } else {
-	                player.speed -= player.deceleration;
-	            }
-	        }
-	        player.speed = Math.max(player.speed, 0); //cannot go in reverse
-	        player.speed = Math.min(player.speed, player.maxSpeed); //maximum speed
-	        player.position += player.speed * (delta / 30.0);
-	        
-	        // car turning
-	        if (keys[37]) {
-	            // 37 left
-	            if(player.speed > 0){
-	                player.posx -= player.turning * (delta / 30);
-	            }
-	            var carSprite = {
-	                a: data.sprites.car_4,
-	                x: 117,
+	        var carSprite = {
+                a: data.sprites.car,
+                x: 125,
+                y: 190
+            };
+			if(player.steering < 0){
+				var index = Math.floor(-player.steering / 10)
+				carSprite = {
+	                a: data.sprites.carL[index],
+	                x: 125 + data.sprites.car.w - data.sprites.carL[index].w,
 	                y: 190
-	            };
-	        } else if (keys[39]) {
-	            // 39 right
-	            if(player.speed > 0){
-	                player.posx += player.turning * (delta / 30);
-	            }
-	            var carSprite = {
-	                a: data.sprites.car_8,
+            	}
+			} else if(player.steering > 0){
+				var index = Math.floor(player.steering / 10)
+				carSprite = {
+	                a: data.sprites.carR[index],
 	                x: 125,
 	                y: 190
-	            };
-	        } else {
-	            var carSprite = {
-	                a: data.sprites.car, 
-	                x:125, 
-	                y:190
-	            };
-	        }
-	        
+            	}
+			}
 	        var spriteBuffer = [];
 	        
 	        // --------------------------
@@ -259,12 +214,12 @@ var game = (function(){
 	                    data.render.height / 2 + endProjectedHeight, 
 	                    endScaling, 
 	                    nextSegment.curve - baseOffset - lastDelta * endScaling, 
-	                    counter < data.road.segmentPerColor, currentSegmentIndex == 2 || currentSegmentIndex == (road.length/*TODO*/-data.render.depthOfField));
+	                    counter < data.road.segmentPerColor, currentSegmentIndex == 2 || currentSegmentIndex == (road.length-data.render.depthOfField));
 	            }
 	            if(currentSegment.sprite){
 	                spriteBuffer.push({
 	                    y: data.render.height / 2 + startProjectedHeight, 
-	                    x: data.render.width / 2 - currentSegment.sprite.pos * data.render.width * currentScaling + /* */currentSegment.curve - baseOffset - (player.posx - baseOffset*2) * currentScaling,
+	                    x: data.render.width / 2 - currentSegment.sprite.pos * data.render.width * currentScaling + currentSegment.curve - baseOffset - (player.posx - baseOffset*2) * currentScaling,
 	                    ymax: data.render.height / 2 + lastProjectedHeight, 
 	                    s: 2.5*currentScaling, 
 	                    i: currentSegment.sprite.type});
@@ -316,9 +271,83 @@ var game = (function(){
 	        currentTimeString = ""+min+":"+sec+":"+mili;
 	        
 	        tools.draw.string(context, spritesheet, currentTimeString, {x: 1, y: 1});
-	        var speed = Math.round(player.speed / player.maxSpeed * 200);
-	        tools.draw.string(context, spritesheet, ""+speed+"mph", {x: 1, y: 10});
+	        var speed = Math.round(player.speed / player.maxSpeed * 420);
+	        tools.draw.string(context, spritesheet, ""+speed+"kph", {x: 1, y: 10});
 	    }
+	}
+	
+	var control = function(timestamp){
+		switch (gameState) {
+			case "intro":
+				if(keys[32]){
+		        	gameState = "menu";
+		        	context.globalAlpha = 1.0
+		        }
+				break;
+			case "menu":
+				if(keys[32]){
+		        	gameState = "race";
+		      		previousTimestamp = Date.now();
+		            startTime = Date.now();
+		            context.globalAlpha = 1.0;
+		        }
+				break;
+			case "race":
+				var deltaT = (timestamp - previousTimestamp) / 30.0;
+		        previousTimestamp = timestamp;
+				
+		        // --------------------------
+		        // -- Update the car state --
+		        // --------------------------
+		        
+		        var acceleration = -player.deceleration;
+		        if (keys[40]) {
+		        	acceleration = -player.breaking;
+		        } else if (keys[38]){
+		        	if (Math.abs(lastDelta) > 130 && player.speed > 5){
+		        		acceleration = -player.deceleration * 2;
+	        		} else {	        			
+		        		acceleration = player.acceleration;
+	        		} 
+		        }
+		        
+		        // car turning
+		        if (keys[37]) {
+		            // 37 left
+		            player.steering -= 5;
+		            if(player.steering < -29){
+		            	player.steering = -29
+		            }
+		        } else if (keys[39]) {
+		            player.steering += 5;
+		        	if (player.steering > 29){
+		            	player.steering = 29
+		            }
+		        } else {
+		        	if(player.steering !== 0){
+		        		if(Math.abs(player.steering) < 8){
+		        			player.steering = 0;
+		        		} else {
+			        		player.steering -= 8 * player.steering / Math.abs(player.steering);
+		        		}
+		        	}
+		        }
+		        
+		        // "Phyisc simulation"
+		        player.speed    += acceleration * deltaT;
+		        
+		        player.speed = Math.max(player.speed, 0); //cannot go in reverse
+		        player.speed = Math.min(player.speed, player.maxSpeed); //maximum speed
+				
+				var steeringBonus = 1.0;		        
+		        if(player.speed < 3){
+		        	steeringBonus = 9 - 3 * player.speed;
+		        }
+		        
+		        player.position += player.speed * deltaT * Math.cos(Math.PI / 180 * player.steering);
+		        player.posx     += player.speed * deltaT * Math.sin(Math.PI / 180 * player.steering) * steeringBonus;
+				break;
+		}
 	}
 	
     // -----------------------------
@@ -346,7 +375,8 @@ var game = (function(){
         breaking: 0.6,
         turning: 5.0,
         posx: 0,
-        maxSpeed: 15
+        maxSpeed: 15,
+        steering: 0
     };
    	
     // -----------------------------
