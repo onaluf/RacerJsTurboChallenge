@@ -15,6 +15,8 @@ data.road = {
     maxCurve:        400,
     segmentSize:     5,
     segmentPerColor: 4,
+    minOpponentDist: 50,
+    maxOpponentDist: 350
 }
 
 //Level definition

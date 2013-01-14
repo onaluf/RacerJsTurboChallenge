@@ -429,9 +429,25 @@ var game = (function(){
     // ---  Generates the road randomly  ---
     // -------------------------------------
     var generateRoad = function(seed){
+        
+        
     	level = tools.parseSeed(seed);
     	var r = new tools.r(level.random);
     	
+        // generate opponents
+        var startPoint = 0;
+        var opponents = [];
+        while (startPoint < level.length * data.road.zoneSize * data.road.segmentSize){
+            var start    = r.nextRange(data.road.minOpponentDist, data.road.maxOpponentDist);
+            var phase = r.nextRange(-1, 0,1);
+            opponents.push({
+                start: start,
+                phase: phase 
+            });
+            
+            startPoint += start;
+        }
+
         var currentStateH = 0; //0=flat 1=up 2= down
         var transitionH   = [[0,1,2],[0,2,2],[0,1,1]];
         
@@ -473,7 +489,7 @@ var game = (function(){
                 if(i % data.road.zoneSize / 4 == 0){
                     var sprite = {type: data.sprites.rock, pos: -0.55};
                 } else {
-                    if(r.nextFloat() < 0.05) {
+                    if(r.nextFloat() < level.density) {
                         var spriteType = data.levels[level.type].sprites[0];//([tree,rock])[Math.floor(r()*1.9)];
                         var sprite = {type: spriteType, pos: 0.6 + r.nextRange(0,4)};
                         if(r.nextFloat() < 0.5){
