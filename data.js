@@ -21,8 +21,8 @@ data.road = {
 data.levels = {
 	desert : {
 		background : {
-	        x: 0,
-	        y: 9,
+	        x: 704,
+	        y: 0,
 	        w: 320,
 	        h: 120
 	    },
@@ -48,7 +48,37 @@ data.levels = {
 		        h: 14
 		    }
 	    ]
-	}
+	},
+    forest : {
+        background : {
+            x: 704,
+            y: 120,
+            w: 320,
+            h: 120
+        },
+        colors : {
+            sky     : "#06c7ff",
+            ground1 : "#558c44",
+            ground2 : "#5e9b4b",
+            road1   : "#777",
+            road2   : "#999",
+            border1 : "#705536",
+            border2 : "#82633f"
+        },
+        sprites : [
+            {
+                x: 321,
+                y: 9,
+                w: 23,
+                h: 50
+            },{
+                x: 345,
+                y: 9,
+                w: 11,
+                h: 14
+            }
+        ]
+    }
 }
 
 // images for the intro

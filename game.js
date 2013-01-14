@@ -1,6 +1,7 @@
 // The game itself
 var game = (function(){
 	var gameState = "intro"; // intro
+	var level;
 	
 	// this is the list of rendererr indexed by the game state they work for
 	var previousTimestamp;
@@ -187,7 +188,7 @@ var game = (function(){
 	        
 	        var baseOffset                 =  currentSegment.curve + (road[(currentSegmentIndex + 1) % road.length].curve - currentSegment.curve) * playerPosRelative;
 	        
-	        tools.draw.background(context, data.levels.desert, -baseOffset, 10*(playerPosNextSegmentHeight - playerPosSegmentHeight));
+	        tools.draw.background(context, data.levels[level.type], -baseOffset, 10*(playerPosNextSegmentHeight - playerPosSegmentHeight));
 	        
 	        lastDelta = player.posx - baseOffset*2;
 	        
@@ -209,6 +210,7 @@ var game = (function(){
 	            if(currentHeight > endProjectedHeight){
 	               tools.draw.segment(
 	               		context,
+	               		data.levels[level.type],
 	                    data.render.height / 2 + currentHeight, 
 	                    currentScaling, currentSegment.curve - baseOffset - lastDelta * currentScaling, 
 	                    data.render.height / 2 + endProjectedHeight, 
@@ -427,7 +429,7 @@ var game = (function(){
     // ---  Generates the road randomly  ---
     // -------------------------------------
     var generateRoad = function(seed){
-    	var level = tools.parseSeed(seed);
+    	level = tools.parseSeed(seed);
     	var r = new tools.r(level.random);
     	
         var currentStateH = 0; //0=flat 1=up 2= down

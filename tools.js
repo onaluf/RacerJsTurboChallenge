@@ -190,11 +190,11 @@ tools.draw = {
             if(h > 0) context.drawImage(spritesheet,  sprite.i.x, sprite.i.y, sprite.i.w, h, sprite.x, destY, sprite.s * sprite.i.w, sprite.s * h);
         //}
     },
-    segment: function (context, position1, scale1, offset1, position2, scale2, offset2, alternate, finishStart){
-        var grass     = (alternate) ? "#eda" : "#dc9";
-        var border    = (alternate) ? "#e00" : "#fff";
-        var road      = (alternate) ? "#999" : "#777";
-        var lane      = (alternate) ? "#fff" : "#777";
+    segment: function (context, level, position1, scale1, offset1, position2, scale2, offset2, alternate, finishStart){
+        var grass     = (alternate) ? level.colors.ground2 : level.colors.ground1;
+        var border    = (alternate) ? level.colors.border2 : level.colors.border1;
+        var road      = (alternate) ? level.colors.road2 : level.colors.road1;
+        var lane      = (alternate) ? "#fff" : level.colors.road1;
 
         if(finishStart){
             road = "#fff";
