@@ -192,6 +192,15 @@ var game = (function(){
 	        
 	        lastDelta = player.posx - baseOffset*2;
 	        
+	        
+	        // find first visible car
+	        var opponentBuffer = [];
+	        var firstCarIndex = 0;
+	        var distanceDriven = 6.0 * (timestamp - startTime)/30;
+	        var checked = 0;
+	        var i = 0;
+	        
+	        
 	        var iter = data.render.depthOfField;
 	        while (iter--) {
 	            // Next Segment:
@@ -206,6 +215,22 @@ var game = (function(){
 	
 	            var currentHeight        = Math.min(lastProjectedHeight, startProjectedHeight);
 	            var currentScaling       = startScaling;
+	            
+	            while( i < opponents.length && opponents[i].start + checked + distanceDriven < currentSegmentIndex * data.road.segmentSize){
+		        	checked += opponents[i].start;
+		        	i++;
+		        }
+	            while(i < opponents.length && opponents[i].start + checked + distanceDriven < (currentSegmentIndex + 1) * data.road.segmentSize){
+		        	spriteBuffer.push({
+	                    y: data.render.height / 2 + startProjectedHeight, 
+	                    x: data.render.width / 2 - 0.3 * (0.3 + Math.cos(((timestamp - startTime)/2000 + opponents[i].phase) * Math.PI / 2)) * data.render.width * currentScaling + currentSegment.curve - baseOffset - (player.posx - baseOffset*2) * currentScaling,
+	                    ymax: data.render.height / 2 + lastProjectedHeight, 
+	                    s: currentScaling, 
+	                    i: data.sprites.opponent});
+		            
+		        	checked += opponents[i].start;
+		        	i++;
+		        }
 	            
 	            if(currentHeight > endProjectedHeight){
 	               tools.draw.segment(
@@ -259,7 +284,7 @@ var game = (function(){
 	        // --     Draw the hud     --
 	        // --------------------------        
 	        tools.draw.string(context, spritesheet, ""+Math.round(absoluteIndex/(road.length-data.render.depthOfField)*100)+"%",{x: 287, y: 1});
-	        var diff = Date.now() - startTime;
+	        var diff = timestamp - startTime;
 	        
 	        var min = Math.floor(diff / 60000);
 	        
@@ -368,6 +393,7 @@ var game = (function(){
     var seed = tools.parseHash();
 	
     var road = [];
+    var opponents = [];
    
     var player = {
         position: 10,
@@ -436,10 +462,10 @@ var game = (function(){
     	
         // generate opponents
         var startPoint = 0;
-        var opponents = [];
+        opponents = [];
         while (startPoint < level.length * data.road.zoneSize * data.road.segmentSize){
             var start    = r.nextRange(data.road.minOpponentDist, data.road.maxOpponentDist);
-            var phase = r.nextRange(-1, 0,1);
+            var phase = r.nextFloat()*2-1.0
             opponents.push({
                 start: start,
                 phase: phase 
@@ -448,6 +474,7 @@ var game = (function(){
             startPoint += start;
         }
 
+		road = [];
         var currentStateH = 0; //0=flat 1=up 2= down
         var transitionH   = [[0,1,2],[0,2,2],[0,1,1]];
         
