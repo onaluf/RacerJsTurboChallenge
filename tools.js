@@ -8,32 +8,65 @@
 // namespace
 var tools = function(){};
 
-// RequestAnimationFrame polyfill by Paul Irish and Erik Möller 
-// (http://paulirish.com/2011/requestanimationframe-for-smart-animating/)
+// RequestAnimationFrame polyfill by Johan Nordberg
+// (http://www.makeitgo.ws/articles/animationframe/)
 (function() {
-    var lastTime = 0;
-    var vendors = ['ms', 'moz', 'webkit', 'o'];
-    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
-        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
-        window.cancelAnimationFrame = 
-          window[vendors[x]+'CancelAnimationFrame'] || window[vendors[x]+'CancelRequestAnimationFrame'];
+  var lastFrame, method, now, queue, requestAnimationFrame, timer, vendor, _i, _len, _ref, _ref1;
+  method = 'native';
+  now = Date.now || function() {
+    return new Date().getTime();
+  };
+  requestAnimationFrame = window.requestAnimationFrame;
+  _ref = ['webkit', 'moz', 'o', 'ms'];
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    vendor = _ref[_i];
+    if (!(requestAnimationFrame != null)) {
+      requestAnimationFrame = window[vendor + "RequestAnimationFrame"];
     }
- 
-    if (!window.requestAnimationFrame)
-        window.requestAnimationFrame = function(callback, element) {
-            var currTime = new Date().getTime();
-            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-            var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
-              timeToCall);
-            lastTime = currTime + timeToCall;
-            return id;
-        };
- 
-    if (!window.cancelAnimationFrame)
-        window.cancelAnimationFrame = function(id) {
-            clearTimeout(id);
-        };
-}());
+  }
+  if (!(requestAnimationFrame != null)) {
+    method = 'timer';
+    lastFrame = 0;
+    queue = timer = null;
+    requestAnimationFrame = function(callback) {
+      var fire, nextFrame, time;
+      if (queue != null) {
+        queue.push(callback);
+        return;
+      }
+      time = now();
+      nextFrame = Math.max(0, 16.66 - (time - lastFrame));
+      queue = [callback];
+      lastFrame = time + nextFrame;
+      fire = function() {
+        var cb, q, _j, _len1;
+        q = queue;
+        queue = null;
+        for (_j = 0, _len1 = q.length; _j < _len1; _j++) {
+          cb = q[_j];
+          cb(lastFrame);
+        }
+      };
+      timer = setTimeout(fire, nextFrame);
+    };
+  }
+  requestAnimationFrame(function(time) {
+    var _ref1;
+    if ((((_ref1 = window.performance) != null ? _ref1.now : void 0) != null) && time < 1e12) {
+      requestAnimationFrame.now = function() {
+        return window.performance.now();
+      };
+      requestAnimationFrame.method = 'native-highres';
+    } else {
+      requestAnimationFrame.now = now;
+    }
+  });
+  requestAnimationFrame.now = ((_ref1 = window.performance) != null ? _ref1.now : void 0) != null ? (function() {
+    return window.performance.now();
+  }) : now;
+  requestAnimationFrame.method = method;
+  window.requestAnimationFrame = requestAnimationFrame;
+})();
 
 // LCG Pseudo Random Number Generator by orip
 // (http://stackoverflow.com/questions/424292/how-to-create-my-own-javascript-random-number-generator-that-i-can-also-set-the#424445)	

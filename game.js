@@ -26,7 +26,7 @@ var game = (function(){
                 context.fillRect(0, 0, data.render.width, data.render.height);
             },
             render:  function (percent){
-                tools.draw.image(context, data.intro.hbe, 0, 50, 1);
+                tools.draw.image(context, data.intro.hbe, 0, 70, 1);
             }
         },{
             duration: 3000,
@@ -92,6 +92,8 @@ var game = (function(){
 	];
 	
 	var render = function(timestamp){
+		var now = requestAnimationFrame.now();
+		
 	    // scalling
         domContext.drawImage(canvas, 0, 0, domCanvas.width, domCanvas.height);
         
@@ -199,7 +201,9 @@ var game = (function(){
 	        var distanceDriven = 6.0 * (timestamp - startTime)/30;
 	        var checked = 0;
 	        var i = 0;
-	        
+	        if(player.immunity > 0){
+	        	player.immunity--;
+	        }
 	        
 	        var iter = data.render.depthOfField;
 	        while (iter--) {
@@ -221,9 +225,17 @@ var game = (function(){
 		        	i++;
 		        }
 	            while(i < opponents.length && opponents[i].start + checked + distanceDriven < (currentSegmentIndex + 1) * data.road.segmentSize){
+	            	var x = Math.cos(((timestamp - startTime)/2000 + opponents[i].phase) * Math.PI / 2) * 113;
+	            	
+	            	if (player.immunity === 0 && iter < data.render.depthOfField - 3 && iter > data.render.depthOfField - 5){
+	            		if (Math.abs(x - lastDelta) < data.sprites.car.w - 5){
+	            			player.speed *= 0.7;
+	            			player.immunity = 10;
+	            		}
+	            	}
 		        	spriteBuffer.push({
 	                    y: data.render.height / 2 + startProjectedHeight, 
-	                    x: data.render.width / 2 - 0.3 * (0.3 + Math.cos(((timestamp - startTime)/2000 + opponents[i].phase) * Math.PI / 2)) * data.render.width * currentScaling + currentSegment.curve - baseOffset - (player.posx - baseOffset*2) * currentScaling,
+	                    x: data.render.width / 2 + (x - data.sprites.opponent.w / 2) * currentScaling + currentSegment.curve - baseOffset - (player.posx - baseOffset*2) * currentScaling,
 	                    ymax: data.render.height / 2 + lastProjectedHeight, 
 	                    s: currentScaling, 
 	                    i: data.sprites.opponent});
@@ -314,8 +326,8 @@ var game = (function(){
 			case "menu":
 				if(keys[32]){
 		        	gameState = "race";
-		      		previousTimestamp = Date.now();
-		            startTime = Date.now();
+		      		previousTimestamp = requestAnimationFrame.now();
+		            startTime = requestAnimationFrame.now();
 		            context.globalAlpha = 1.0;
 		        }
 				break;
@@ -404,7 +416,8 @@ var game = (function(){
         turning: 5.0,
         posx: 0,
         maxSpeed: 15,
-        steering: 0
+        steering: 0,
+        immunity: 0
     };
    	
     // -----------------------------
@@ -553,7 +566,7 @@ var game = (function(){
             init();
             spritesheet = new Image();
             spritesheet.onload = function(){
-                previousTimestamp = Date.now();
+                previousTimestamp = requestAnimationFrame.now();
                 window.requestAnimationFrame(render);
             };
             spritesheet.src = "spritesheet.complete.png";
