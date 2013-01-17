@@ -26,7 +26,7 @@ var game = (function(){
                 context.fillRect(0, 0, data.render.width, data.render.height);
             },
             render:  function (percent){
-                tools.draw.image(context, data.intro.hbe, 0, 70, 1);
+                tools.draw.image(context, data.intro.hbe, 0, 80, 1);
             }
         },{
             duration: 3000,
