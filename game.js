@@ -241,6 +241,45 @@ var game = (function(){
 	            var currentHeight        = Math.min(lastProjectedHeight, startProjectedHeight);
 	            var currentScaling       = startScaling;
 	            
+	            // --------------------------
+                // --   DRAW THE SEGMENT   --
+                // --------------------------
+	            if(currentHeight > endProjectedHeight){
+	               tools.draw.segment(
+	               		context,
+	               		data.levels[level.type],
+	                    data.render.height / 2 + currentHeight, 
+	                    currentScaling, currentSegment.curve - baseOffset - lastDelta * currentScaling, 
+	                    data.render.height / 2 + endProjectedHeight, 
+	                    endScaling, 
+	                    nextSegment.curve - baseOffset - lastDelta * endScaling, 
+	                    counter < data.road.segmentPerColor, currentSegmentIndex == 2 || currentSegmentIndex == (road.length-data.render.depthOfField));
+	            }
+	            
+	            // --------------------------
+                // --     DRAW THE CAR     --
+                // --------------------------
+                if(raceOver !== false){
+                    var carScale  =  30 / (data.render.camera_distance + player.position - raceOver);
+                    var heightSegment = road[(Math.floor(player.position / data.road.segmentSize) - 2) % road.length];
+                    var projCarH = Math.floor((raceOver - heightSegment.height) * data.render.camera_distance / (data.render.camera_distance + player.position));
+                    
+                    tools.draw.image(context, carSprite.a, carSprite.x, data.render.height / 2 + projCarH, carScale);
+                } else {
+                    if (iter == data.render.depthOfField - 3){
+                        spriteBuffer.push({
+                            x: carSprite.x,
+                            y: carSprite.y + carSprite.a.h, 
+                            ymax: data.render.height, 
+                            s: 1, 
+                            i: carSprite.a});
+                    }
+                    tools.draw.image(context, carSprite.a, carSprite.x, carSprite.y, 1);
+                }
+	            
+	            // --------------------------
+	            // -- STORE THE OPPONENTS  --
+	            // --------------------------
 	            while( i < opponents.length && opponents[i].start + checked + distanceDriven < currentSegmentIndex * data.road.segmentSize){
 		        	checked += opponents[i].start;
 		        	i++;
@@ -270,17 +309,9 @@ var game = (function(){
 		        	i++;
 		        }
 	            
-	            if(currentHeight > endProjectedHeight){
-	               tools.draw.segment(
-	               		context,
-	               		data.levels[level.type],
-	                    data.render.height / 2 + currentHeight, 
-	                    currentScaling, currentSegment.curve - baseOffset - lastDelta * currentScaling, 
-	                    data.render.height / 2 + endProjectedHeight, 
-	                    endScaling, 
-	                    nextSegment.curve - baseOffset - lastDelta * endScaling, 
-	                    counter < data.road.segmentPerColor, currentSegmentIndex == 2 || currentSegmentIndex == (road.length-data.render.depthOfField));
-	            }
+	            // --------------------------
+                // --    STORE THE SPRITE   --
+                // --------------------------
 	            if(currentSegment.sprite){
 	                spriteBuffer.push({
 	                    y: data.render.height / 2 + startProjectedHeight, 
@@ -310,21 +341,11 @@ var game = (function(){
 		        }
 	        }
 	        
+	        // --------------------------
+            // --     DRAW THE SPRITES --
+            // --------------------------
 	        while(sprite = spriteBuffer.pop()) {
 	            tools.draw.sprite(context, sprite);
-	        }
-	        
-	        // --------------------------
-	        // --     Draw the car     --
-	        // --------------------------
-	        if(raceOver !== false){
-	        	var carScale  =  30 / (data.render.camera_distance + player.position - raceOver);
-	        	var heightSegment = road[(Math.floor(player.position / data.road.segmentSize) - 2) % road.length];
-	        	var projCarH = Math.floor((raceOver - heightSegment.height) * data.render.camera_distance / (data.render.camera_distance + player.position));
-	        	
-	        	tools.draw.image(context, carSprite.a, carSprite.x, data.render.height / 2 + projCarH, carScale);
-	        } else {
-	        	tools.draw.image(context, carSprite.a, carSprite.x, carSprite.y, 1);
 	        }
 	
 	        // --------------------------
@@ -561,18 +582,15 @@ var game = (function(){
 
             for(var i=0; i < data.road.zoneSize; i++){
                 // add a tree
-                if(i % data.road.zoneSize / 4 == 0){
-                    var sprite = {type: data.sprites.rock, pos: -0.55};
-                } else {
-                    if(r.nextFloat() < level.density) {
-                        var spriteType = data.levels[level.type].sprites[0];//([tree,rock])[Math.floor(r()*1.9)];
-                        var sprite = {type: spriteType, pos: 0.6 + r.nextRange(0,4)};
-                        if(r.nextFloat() < 0.5){
-                            sprite.pos = -sprite.pos;
-                        }
-                    } else {
-                        var sprite = false;
+                if(r.nextFloat() < level.density) {
+                    var rIndex = r.nextRange(0,data.levels[level.type].sprites.length);
+                    var spriteType = data.levels[level.type].sprites[rIndex];//([tree,rock])[Math.floor(r()*1.9)];
+                    var sprite = {type: spriteType, pos: 0.6 + r.nextRange(0,4)};
+                    if(r.nextFloat() < 0.5){
+                        sprite.pos = -sprite.pos;
                     }
+                } else {
+                    var sprite = false;
                 }
                 road.push({
                     height: currentHeight+finalHeight / 2 * (1 + Math.sin(i/data.road.zoneSize * Math.PI-Math.PI/2)),
