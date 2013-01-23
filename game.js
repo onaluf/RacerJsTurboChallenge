@@ -1,7 +1,22 @@
 // The game itself
 var game = (function(){
 	var gameState = "intro"; // intro
+	var raceOver = false;
 	var level;
+	
+	// touch vars
+	var UP = {
+		on: false,
+		id: 0
+	};
+	var LEFT = {
+		on: false,
+		id: 0
+	};
+	var RIGHT ={
+		on: false,
+		id: 0
+	};
 	
 	// this is the list of rendererr indexed by the game state they work for
 	var previousTimestamp;
@@ -74,8 +89,6 @@ var game = (function(){
                 tools.draw.string(context, spritesheet, "Fonts",{x: 140, y: 90});
                 tools.draw.string(context, spritesheet, "by",{x: 152, y: 100});
                 tools.draw.string(context, spritesheet, "spicypixel.net",{x: 105, y: 110});
-                tools.draw.string(context, spritesheet, "and",{x: 149, y: 120});
-                tools.draw.string(context, spritesheet, "???",{x: 137, y: 130});
             }
         },{
             duration: 2000,
@@ -147,7 +160,7 @@ var game = (function(){
 	        window.requestAnimationFrame(render);
 		},
 		race : function(timestamp){
-	        window.requestAnimationFrame(render);
+	        var rAFid = window.requestAnimationFrame(render);
 	        var carSprite = {
                 a: data.sprites.car,
                 x: 125,
@@ -173,10 +186,18 @@ var game = (function(){
 	        // --------------------------
 	        // --   Render the road    --
 	        // --------------------------
-	        var absoluteIndex = Math.floor(player.position / data.road.segmentSize);
-	        
-	        var currentSegmentIndex        = (absoluteIndex - 2) % road.length;
-	        var currentSegmentPosition     = (absoluteIndex - 2) * data.road.segmentSize - player.position;
+	        var absoluteIndex, currentSegmentIndex, currentSegmentPosition, playerPosRelative;
+	        if (raceOver !== false){
+		        absoluteIndex = Math.floor(raceOver / data.road.segmentSize);
+		        currentSegmentIndex        = (absoluteIndex - 2) % road.length;
+		        currentSegmentPosition     = (absoluteIndex - 2) * data.road.segmentSize - raceOver;
+		        playerPosRelative          = (raceOver % data.road.segmentSize) / data.road.segmentSize;
+	        } else {
+	        	absoluteIndex = Math.floor(player.position / data.road.segmentSize);
+		        currentSegmentIndex        = (absoluteIndex - 2) % road.length;
+		        currentSegmentPosition     = (absoluteIndex - 2) * data.road.segmentSize - player.position;
+		        playerPosRelative          = (player.position % data.road.segmentSize) / data.road.segmentSize;
+	        }
 	        var currentSegment             = road[currentSegmentIndex];
 	        
 	        var lastProjectedHeight        = Number.POSITIVE_INFINITY;
@@ -185,7 +206,7 @@ var game = (function(){
 	        
 	        var playerPosSegmentHeight     = road[absoluteIndex % road.length].height;
 	        var playerPosNextSegmentHeight = road[(absoluteIndex + 1) % road.length].height;
-	        var playerPosRelative          = (player.position % data.road.segmentSize) / data.road.segmentSize;
+	       
 	        var playerHeight               = data.render.camera_height + playerPosSegmentHeight + (playerPosNextSegmentHeight - playerPosSegmentHeight) * playerPosRelative;
 	        
 	        var baseOffset                 =  currentSegment.curve + (road[(currentSegmentIndex + 1) % road.length].curve - currentSegment.curve) * playerPosRelative;
@@ -198,7 +219,7 @@ var game = (function(){
 	        // find first visible car
 	        var opponentBuffer = [];
 	        var firstCarIndex = 0;
-	        var distanceDriven = 6.0 * (timestamp - startTime)/30;
+	        var distanceDriven = 1.0 * (timestamp - startTime)/30.0;
 	        var checked = 0;
 	        var i = 0;
 	        if(player.immunity > 0){
@@ -233,11 +254,16 @@ var game = (function(){
 	            			player.immunity = 10;
 	            		}
 	            	}
+			        var opponentPosition = opponents[i].start + checked + distanceDriven;
+			        var ratioPos = (opponentPosition - currentSegmentIndex * data.road.segmentSize) / data.road.segmentSize
+	            	var height   = startProjectedHeight + ratioPos * (endProjectedHeight-startProjectedHeight);
+	            	var scaling  = startScaling + ratioPos * (endScaling - startScaling);
+	            	
 		        	spriteBuffer.push({
-	                    y: data.render.height / 2 + startProjectedHeight, 
-	                    x: data.render.width / 2 + (x - data.sprites.opponent.w / 2) * currentScaling + currentSegment.curve - baseOffset - (player.posx - baseOffset*2) * currentScaling,
+	                    y: data.render.height / 2 + height, 
+	                    x: data.render.width / 2 + (x - data.sprites.opponent.w / 2) * scaling + currentSegment.curve - baseOffset - (player.posx - baseOffset*2) * scaling,
 	                    ymax: data.render.height / 2 + lastProjectedHeight, 
-	                    s: currentScaling, 
+	                    s: 0.9 * scaling, 
 	                    i: data.sprites.opponent});
 		            
 		        	checked += opponents[i].start;
@@ -276,10 +302,11 @@ var game = (function(){
 	            
 	            counter = (counter + 1) % (2 * data.road.segmentPerColor);
 	            
-	            if(absoluteIndex >= road.length-data.render.depthOfField-1){
+	            if(absoluteIndex >= road.length-data.render.depthOfField-1 && raceOver === false){
 		            tools.draw.string(context, spritesheet, "You did it!", {x: 100, y: 20});
 		            tools.draw.string(context, spritesheet, "Press t to tweet your time.", {x: 30, y: 30});
 		            $(window).keydown(function(e){ if(e.keyCode == 84) {location.href="http://twitter.com/home?status="+escape("I've just raced through #racer10k in "+currentTimeString+"!")}});
+		           	raceOver = player.position;
 		        }
 	        }
 	        
@@ -290,7 +317,15 @@ var game = (function(){
 	        // --------------------------
 	        // --     Draw the car     --
 	        // --------------------------
-	        tools.draw.image(context, carSprite.a, carSprite.x, carSprite.y, 1);
+	        if(raceOver !== false){
+	        	var carScale  =  30 / (data.render.camera_distance + player.position - raceOver);
+	        	var heightSegment = road[(Math.floor(player.position / data.road.segmentSize) - 2) % road.length];
+	        	var projCarH = Math.floor((raceOver - heightSegment.height) * data.render.camera_distance / (data.render.camera_distance + player.position));
+	        	
+	        	tools.draw.image(context, carSprite.a, carSprite.x, data.render.height / 2 + projCarH, carScale);
+	        } else {
+	        	tools.draw.image(context, carSprite.a, carSprite.x, carSprite.y, 1);
+	        }
 	
 	        // --------------------------
 	        // --     Draw the hud     --
@@ -318,13 +353,13 @@ var game = (function(){
 	var control = function(timestamp){
 		switch (gameState) {
 			case "intro":
-				if(keys[32]){
+				if(keys[32] || UP.on){
 		        	gameState = "menu";
 		        	context.globalAlpha = 1.0
 		        }
 				break;
 			case "menu":
-				if(keys[32]){
+				if(keys[32] || UP.on){
 		        	gameState = "race";
 		      		previousTimestamp = requestAnimationFrame.now();
 		            startTime = requestAnimationFrame.now();
@@ -342,7 +377,7 @@ var game = (function(){
 		        var acceleration = -player.deceleration;
 		        if (keys[40]) {
 		        	acceleration = -player.breaking;
-		        } else if (keys[38]){
+		        } else if (keys[38] || UP.on){
 		        	if (Math.abs(lastDelta) > 130 && player.speed > 5){
 		        		acceleration = -player.deceleration * 2;
 	        		} else {	        			
@@ -351,13 +386,13 @@ var game = (function(){
 		        }
 		        
 		        // car turning
-		        if (keys[37]) {
+		        if (keys[37] || LEFT.on) {
 		            // 37 left
 		            player.steering -= 5;
 		            if(player.steering < -29){
 		            	player.steering = -29
 		            }
-		        } else if (keys[39]) {
+		        } else if (keys[39] || RIGHT.on) {
 		            player.steering += 5;
 		        	if (player.steering > 29){
 		            	player.steering = 29
@@ -560,6 +595,42 @@ var game = (function(){
             }
         }
     };
+        
+    document.addEventListener('touchstart', function(e) {
+    	e.preventDefault();
+    	for (var i = 0; i < e.touches.length; i++){
+		    var touch = e.touches[i]
+		    if (touch.pageX < $(window).width()/3){
+		    	UP.on = true;
+		    	UP.id = touch.identifier;
+		    } else if (touch.pageX > $(window).width()/3 * 2){
+		    	if(touch.pageX < $(window).width()/6 * 5){
+		    		LEFT.on = true;
+	    			LEFT.id = touch.identifier;
+		    	} else {
+		    		RIGHT.on = true;
+		    		RIGHT.id = touch.identifier;
+		    	}
+		    }
+		    
+    	}
+	}, false);
+	document.addEventListener('touchend', function(e) {
+		e.preventDefault();
+		
+		for (var i = 0; i < e.changedTouches.length; i++){
+		    var touch = e.changedTouches[i]
+		    if (touch.identifier === UP.id){
+		    	UP.on = false;
+		    } 
+		    if (touch.identifier === LEFT.id){
+		    	LEFT.on = false;
+		    }
+		    if (touch.identifier === RIGHT.id){
+		    	RIGHT.on = false;
+		    }
+	   }
+	}, false);
     
     return {
         start: function(){
