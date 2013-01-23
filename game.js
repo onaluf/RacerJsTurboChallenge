@@ -1,6 +1,38 @@
 // The game itself
 var game = (function(){
-	var gameState = "intro"; // intro
+    // -----------------------------
+    // ---  closure scoped vars  ---
+    // -----------------------------
+    var domCanvas;
+    var domContext;
+    var canvas;
+    var context;
+    var keys = [];
+    var startTime;
+	var previousTimestamp;
+    var lastDelta = 0;
+    var currentTimeString = "";
+    
+    
+    var seed = tools.parseHash();
+    
+    var road = [];
+    var opponents = [];
+   
+    var player = {
+        position: 10,
+        speed: 0,
+        acceleration: 0.05,
+        deceleration: 0.1,
+        breaking: 0.6,
+        turning: 5.0,
+        posx: 0,
+        maxSpeed: 15,
+        steering: 0,
+        immunity: 0
+    };
+    
+    var gameState = "intro";
 	var raceOver = false;
 	var level;
 	
@@ -18,8 +50,12 @@ var game = (function(){
 		id: 0
 	};
 	
-	// this is the list of rendererr indexed by the game state they work for
-	var previousTimestamp;
+	
+    // -----------------------------
+    // -- closure scoped function --
+    // -----------------------------
+	
+	// this is the list of renderer indexed by the game state they work for
 	var introScreens  = [
         {
             duration: 4500,
@@ -161,6 +197,8 @@ var game = (function(){
 		},
 		race : function(timestamp){
 	        var rAFid = window.requestAnimationFrame(render);
+	        
+	        // find the correct car sprite
 	        var carSprite = {
                 a: data.sprites.car,
                 x: 125,
@@ -216,7 +254,7 @@ var game = (function(){
 	        lastDelta = player.posx - baseOffset*2;
 	        
 	        
-	        // find first visible car
+	        // Opponent rendering variables 
 	        var opponentBuffer = [];
 	        var firstCarIndex = 0;
 	        var distanceDriven = 1.0 * (timestamp - startTime)/30.0;
@@ -260,11 +298,19 @@ var game = (function(){
                 // --     DRAW THE CAR     --
                 // --------------------------
                 if(raceOver !== false){
-                    var carScale  =  30 / (data.render.camera_distance + player.position - raceOver);
-                    var heightSegment = road[(Math.floor(player.position / data.road.segmentSize) - 2) % road.length];
-                    var projCarH = Math.floor((raceOver - heightSegment.height) * data.render.camera_distance / (data.render.camera_distance + player.position));
-                    
-                    tools.draw.image(context, carSprite.a, carSprite.x, data.render.height / 2 + projCarH, carScale);
+                    if(player.position > currentSegmentIndex * data.road.segmentSize && player.position < (currentSegmentIndex + 1) * data.road.segmentSize){
+                        
+                        var ratioPos = (player.position - currentSegmentIndex * data.road.segmentSize) / data.road.segmentSize;
+                        var height   = startProjectedHeight + ratioPos * (endProjectedHeight-startProjectedHeight);
+                        var scaling  = startScaling + ratioPos * (endScaling - startScaling);
+                        
+                        spriteBuffer.push({
+                            y: data.render.height / 2 + height,
+                            x: data.render.width / 2 + (player.posx - baseOffset*2-carSprite.a.w / 2) * scaling + currentSegment.curve - baseOffset - (player.posx - baseOffset*2) * scaling,
+                            ymax: data.render.height / 2 + lastProjectedHeight, 
+                            s: 0.9 * scaling,
+                            i: carSprite.a});
+                    }
                 } else {
                     if (iter == data.render.depthOfField - 3){
                         spriteBuffer.push({
@@ -390,95 +436,65 @@ var game = (function(){
 			case "race":
 				var deltaT = (timestamp - previousTimestamp) / 30.0;
 		        previousTimestamp = timestamp;
-				
-		        // --------------------------
-		        // -- Update the car state --
-		        // --------------------------
 		        
-		        var acceleration = -player.deceleration;
-		        if (keys[40]) {
-		        	acceleration = -player.breaking;
-		        } else if (keys[38] || UP.on){
-		        	if (Math.abs(lastDelta) > 130 && player.speed > 5){
-		        		acceleration = -player.deceleration * 2;
-	        		} else {	        			
-		        		acceleration = player.acceleration;
-	        		} 
-		        }
-		        
-		        // car turning
-		        if (keys[37] || LEFT.on) {
-		            // 37 left
-		            player.steering -= 5;
-		            if(player.steering < -29){
-		            	player.steering = -29
-		            }
-		        } else if (keys[39] || RIGHT.on) {
-		            player.steering += 5;
-		        	if (player.steering > 29){
-		            	player.steering = 29
-		            }
+			    if(raceOver === false){
+    				
+    		        // --------------------------
+    		        // -- Update the car state --
+    		        // --------------------------
+    		        
+    		        var acceleration = -player.deceleration;
+    		        if (keys[40]) {
+    		        	acceleration = -player.breaking;
+    		        } else if (keys[38] || UP.on){
+    		        	if (Math.abs(lastDelta) > 130 && player.speed > 5){
+    		        		acceleration = -player.deceleration * 2;
+    	        		} else {	        			
+    		        		acceleration = player.acceleration;
+    	        		} 
+    		        }
+    		        
+    		        // car turning
+    		        if (keys[37] || LEFT.on) {
+    		            // 37 left
+    		            player.steering -= 5;
+    		            if(player.steering < -29){
+    		            	player.steering = -29
+    		            }
+    		        } else if (keys[39] || RIGHT.on) {
+    		            player.steering += 5;
+    		        	if (player.steering > 29){
+    		            	player.steering = 29
+    		            }
+    		        } else {
+    		        	if(player.steering !== 0){
+    		        		if(Math.abs(player.steering) < 8){
+    		        			player.steering = 0;
+    		        		} else {
+    			        		player.steering -= 8 * player.steering / Math.abs(player.steering);
+    		        		}
+    		        	}
+    		        }
+    		        
+    		        // "Phyisc simulation"
+    		        player.speed    += acceleration * deltaT;
+    		        
+    		        player.speed = Math.max(player.speed, 0); //cannot go in reverse
+    		        player.speed = Math.min(player.speed, player.maxSpeed); //maximum speed
+    				
+    				var steeringBonus = 1.0;		        
+    		        if(player.speed < 3){
+    		        	steeringBonus = 9 - 3 * player.speed;
+    		        }
+    		        
+    		        player.position += player.speed * deltaT * Math.cos(Math.PI / 180 * player.steering);
+    		        player.posx     += player.speed * deltaT * Math.sin(Math.PI / 180 * player.steering) * steeringBonus;
 		        } else {
-		        	if(player.steering !== 0){
-		        		if(Math.abs(player.steering) < 8){
-		        			player.steering = 0;
-		        		} else {
-			        		player.steering -= 8 * player.steering / Math.abs(player.steering);
-		        		}
-		        	}
+		            player.position += player.speed * deltaT;
 		        }
-		        
-		        // "Phyisc simulation"
-		        player.speed    += acceleration * deltaT;
-		        
-		        player.speed = Math.max(player.speed, 0); //cannot go in reverse
-		        player.speed = Math.min(player.speed, player.maxSpeed); //maximum speed
-				
-				var steeringBonus = 1.0;		        
-		        if(player.speed < 3){
-		        	steeringBonus = 9 - 3 * player.speed;
-		        }
-		        
-		        player.position += player.speed * deltaT * Math.cos(Math.PI / 180 * player.steering);
-		        player.posx     += player.speed * deltaT * Math.sin(Math.PI / 180 * player.steering) * steeringBonus;
 				break;
 		}
 	}
-	
-    // -----------------------------
-    // ---  closure scoped vars  ---
-    // -----------------------------
-	var domCanvas;
-	var domContext;
-    var canvas;
-    var context;
-    var keys = [];
-    var startTime;
-    var lastDelta = 0;
-    var currentTimeString = "";
-    
-    
-    var seed = tools.parseHash();
-	
-    var road = [];
-    var opponents = [];
-   
-    var player = {
-        position: 10,
-        speed: 0,
-        acceleration: 0.05,
-        deceleration: 0.1,
-        breaking: 0.6,
-        turning: 5.0,
-        posx: 0,
-        maxSpeed: 15,
-        steering: 0,
-        immunity: 0
-    };
-   	
-    // -----------------------------
-    // -- closure scoped function --
-    // -----------------------------
     
     //initialize the game
     var init = function(){
@@ -545,10 +561,10 @@ var game = (function(){
 
 		road = [];
         var currentStateH = 0; //0=flat 1=up 2= down
-        var transitionH   = [[0,1,2],[0,2,2],[0,1,1]];
+        var transitionH   = [[0,1,2],[0,2],[0,1]];
         
         var currentStateC = 0; //0=straight 1=left 2= right
-        var transitionC   = [[0,1,2],[0,2,2],[0,1,1]];
+        var transitionC   = [[0,1,2],[0,2],[0,1]];
 
         var currentHeight = 0;
         var currentCurve  = 0;
@@ -583,9 +599,8 @@ var game = (function(){
             for(var i=0; i < data.road.zoneSize; i++){
                 // add a tree
                 if(r.nextFloat() < level.density) {
-                    var rIndex = r.nextRange(0,data.levels[level.type].sprites.length);
-                    var spriteType = data.levels[level.type].sprites[rIndex];//([tree,rock])[Math.floor(r()*1.9)];
-                    var sprite = {type: spriteType, pos: 0.6 + r.nextRange(0,4)};
+                    var spriteType = r.choice(data.levels[level.type].sprites);
+                    var sprite = {type: spriteType, pos: 0.7 + r.nextRange(0,4)};
                     if(r.nextFloat() < 0.5){
                         sprite.pos = -sprite.pos;
                     }
@@ -594,26 +609,27 @@ var game = (function(){
                 }
                 road.push({
                     height: currentHeight+finalHeight / 2 * (1 + Math.sin(i/data.road.zoneSize * Math.PI-Math.PI/2)),
-                    curve: currentCurve+finalCurve / 2 * (1 + Math.sin(i/data.road.zoneSize * Math.PI-Math.PI/2)),
-                    sprite: sprite
+                    curve:  currentCurve+finalCurve / 2 * (1 + Math.sin(i/data.road.zoneSize * Math.PI-Math.PI/2)), 
+                    sprite: sprite 
                 })
             }
             currentHeight += finalHeight;
             currentCurve += finalCurve;
             // Find next zone
             if(r.nextFloat() < level.mountainy){
-                currentStateH = transitionH[currentStateH][1+Math.round(r.nextFloat())];
+                currentStateH = r.choice(transitionH[currentStateH]);
             } else {
                 currentStateH = transitionH[currentStateH][0];
             }
             if(r.nextFloat() < level.curvy){
-                currentStateC = transitionC[currentStateC][1+Math.round(r.nextFloat())];
+                currentStateC = r.choice(transitionC[currentStateC]);
             } else {
                 currentStateC = transitionC[currentStateC][0];
             }
         }
     };
         
+    // Touch control
     document.addEventListener('touchstart', function(e) {
     	e.preventDefault();
     	for (var i = 0; i < e.touches.length; i++){

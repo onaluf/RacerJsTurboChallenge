@@ -104,7 +104,8 @@ tools.r = function(seed) {
 // parse the hash part of the url.
 tools.parseHash  = function(){
 	var defaultValue = {
-		seed: "0001ZZG0"
+		//seed: "0001ZZZ0"
+		seed: "0011Z0Z0"
 	}
 	// TODO this is just a test implementation, more to come
 	if (window.location.hash !== undefined && window.location.hash.length === 9) {
