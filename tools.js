@@ -160,7 +160,7 @@ tools.generateSeed = function(options){
 }
 
 tools.generateNextCheckpointTime = function(level){
-    return level.length * 2;
+    return level.length * 5;
 }
 
 // resize the canvas to make it take the full browser's window
@@ -288,6 +288,195 @@ tools.draw = {
         }
     }
 }
+
+tools.introScreens  = [
+    {
+        duration: 4500,
+        fadein:   1500,
+        fadeout:  500,
+        clean:   function (context) {
+            context.fillStyle = "rgb(0,0,0)";
+            context.fillRect(0, 0, data.render.width, data.render.height);
+        },
+        render:  function (context, percent){
+            tools.draw.image(context, data.intro.ogam, 0, 100, 1);
+        }
+    },{
+        duration: 3500,
+        fadein:   1500,
+        fadeout:  500,
+        clean:   function (context) {
+            context.fillStyle = "rgb(0,0,0)";
+            context.fillRect(0, 0, data.render.width, data.render.height);
+        },
+        render:  function (context, percent){
+            tools.draw.image(context, data.intro.hbe, 0, 80, 1);
+        }
+    },{
+        duration: 3000,
+        fadein:   1000,
+        fadeout:  0,
+        clean:   function (context) {
+            context.fillStyle = "rgb(0,0,0)";
+            context.fillRect(0, 0, data.render.width, data.render.height);
+        },
+        render:  function (context, percent){
+            tools.draw.image(context, data.intro.road, 0, 0, 1);
+        }
+    },{
+        duration: 4000,
+        fadein:   500,
+        fadeout:  500,
+        clean:   function (context) {
+            tools.draw.image(context, data.intro.road, 0, 0, 1);
+        },
+        render:  function (context, percent){
+            tools.draw.string(context, spritesheet, "Code + Art",{x: 115, y: 90});
+            tools.draw.string(context, spritesheet, "by",{x: 152, y: 100});
+            tools.draw.string(context, spritesheet, "Selim Arsever",{x: 105, y: 110});
+        }
+    },{
+        duration: 4000,
+        fadein:   500,
+        fadeout:  500,
+        clean:   function (context) {
+            tools.draw.image(context, data.intro.road, 0, 0, 1);
+        },
+        render:  function (context, percent){
+            tools.draw.string(context, spritesheet, "Music",{x: 140, y: 90});
+            tools.draw.string(context, spritesheet, "by",{x: 152, y: 100});
+            tools.draw.string(context, spritesheet, "Ashtom",{x: 137, y: 110});
+        }
+    },{
+        duration: 4000,
+        fadein:   500,
+        fadeout:  500,
+        clean:   function (context) {
+            tools.draw.image(context, data.intro.road, 0, 0, 1);
+        },
+        render:  function (context, percent){
+            tools.draw.string(context, spritesheet, "Fonts",{x: 140, y: 90});
+            tools.draw.string(context, spritesheet, "by",{x: 152, y: 100});
+            tools.draw.string(context, spritesheet, "spicypixel.net",{x: 105, y: 110});
+        }
+    },{
+        duration: 2000,
+        fadein:   0,
+        fadeout:  0,
+        clean:   function (context) {
+            tools.draw.image(context, data.intro.road, 0, 0, 1);
+        },
+        render:  function (context, percent){
+            var ratio = 20 * Math.pow(Math.max(0.0, percent / 100.0 - 0.2), 3);
+            tools.draw.image(context, data.intro.car, 320.0 * (1.0-ratio) / 2.0, 80 - 30 * ratio, ratio);
+        }
+    },{
+        duration: 30000,
+        fadein: 100,
+        fadeout: 500,
+        clean: function (context) {
+            context.fillStyle = "rgb(0,0,0)";
+            context.fillRect(0, 0, data.render.width, data.render.height);
+        },
+        render: function (context, percent){
+            tools.draw.image(context, data.intro.rjstc, 64, 30, 1);
+            tools.draw.string(context, spritesheet, "press space",{x: 120, y: 170});
+        }
+    }
+];
+
+tools.generateRoad = function(level){
+	var road = [];
+    var opponents = [];
+	
+	var r = new tools.r(level.random);
+	
+    // generate opponents
+    var startPoint = 0;
+    while (startPoint < level.length * data.road.zoneSize * data.road.segmentSize){
+        var start    = r.nextRange(data.road.minOpponentDist, data.road.maxOpponentDist);
+        var phase = r.nextFloat()*2-1.0
+        opponents.push({
+            start: start,
+            phase: phase 
+        });
+        
+        startPoint += start;
+    }
+
+    var currentStateH = 0; //0=flat 1=up 2= down
+    var transitionH   = [[0,1,2],[0,2],[0,1]];
+    
+    var currentStateC = 0; //0=straight 1=left 2= right
+    var transitionC   = [[0,1,2],[0,2],[0,1]];
+
+    var currentHeight = 0;
+    var currentCurve  = 0;
+
+    var zones         = level.length;
+    while(zones--){
+        // Generate current Zone
+        var finalHeight;
+        switch(currentStateH){
+            case 0:
+                finalHeight = 0; 
+                break;
+            case 1:
+                finalHeight = data.road.maxHeight * r.nextFloat();
+                break;
+            case 2:
+                finalHeight = - data.road.maxHeight * r.nextFloat();
+                break;
+        }
+        var finalCurve;
+        switch(currentStateC){
+            case 0:
+                finalCurve = 0; break;
+            case 1:
+                finalCurve = - data.road.maxCurve * r.nextFloat();
+                break;
+            case 2:
+                finalCurve = data.road.maxCurve * r.nextFloat();
+                break;
+        }
+
+        for(var i=0; i < data.road.zoneSize; i++){
+            // add a tree
+            if(r.nextFloat() < level.density) {
+                var spriteType = r.choice(data.levels[level.type].sprites);
+                var sprite = {type: spriteType, pos: 0.7 + r.nextFloat()*4};
+                if(r.nextFloat() < 0.5){
+                    sprite.pos = -sprite.pos;
+                }
+            } else {
+                var sprite = false;
+            }
+            road.push({
+                height: currentHeight+finalHeight / 2 * (1 + Math.sin(i/data.road.zoneSize * Math.PI-Math.PI/2)),
+                curve:  currentCurve+finalCurve / 2 * (1 + Math.sin(i/data.road.zoneSize * Math.PI-Math.PI/2)), 
+                sprite: sprite 
+            })
+        }
+        currentHeight += finalHeight;
+        currentCurve += finalCurve;
+        // Find next zone
+        if(r.nextFloat() < level.mountainy){
+            currentStateH = r.choice(transitionH[currentStateH]);
+        } else {
+            currentStateH = transitionH[currentStateH][0];
+        }
+        if(r.nextFloat() < level.curvy){
+            currentStateC = r.choice(transitionC[currentStateC]);
+        } else {
+            currentStateC = transitionC[currentStateC][0];
+        }
+    }
+    
+    return {
+    	road: road,
+    	opponents: opponents
+    };
+};
 
 tools.loadSound = function (audioContext, url, callback){
     if(false /*audioContext*/){
