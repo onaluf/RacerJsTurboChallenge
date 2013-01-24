@@ -65,12 +65,12 @@ data.levels = {
         },
         colors : {
             sky     : "#06c7ff",
-            ground1 : "#558c44",
-            ground2 : "#5e9b4b",
-            road1   : "#777",
-            road2   : "#999",
-            border1 : "#705536",
-            border2 : "#82633f"
+            ground1 : "#5e9b4b",
+            ground2 : "#558c44",
+            road1   : "#999",
+            road2   : "#777",
+            border1 : "#82633f",
+            border2 : "#705536"
         },
         sprites : [
             {
