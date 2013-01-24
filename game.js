@@ -12,7 +12,9 @@ var game = (function(){
 	var previousTimestamp;
     var lastDelta = 0;
     var currentTimeString = "";
-    
+    var audioContext = false;
+    var introMusic;
+    var raceMusic;
     
     var seed = tools.parseHash();
     
@@ -52,8 +54,13 @@ var game = (function(){
 	
 	
     // -----------------------------
-    // -- closure scoped function --
+    // -- Closure Scoped Function --
     // -----------------------------
+	var startRace = function(){
+	    previousTimestamp = requestAnimationFrame.now();
+        startTime = requestAnimationFrame.now();
+        checkpointTime = tools.generateNextCheckpointTime(level);
+	}
 	
 	// this is the list of renderer indexed by the game state they work for
 	var introScreens  = [
@@ -137,11 +144,25 @@ var game = (function(){
                 var ratio = 20 * Math.pow(Math.max(0.0, percent / 100.0 - 0.2), 3);
                 tools.draw.image(context, data.intro.car, 320.0 * (1.0-ratio) / 2.0, 80 - 30 * ratio, ratio);
             }
+        },{
+            duration: 30000,
+            fadein: 100,
+            fadeout: 500,
+            clean: function () {
+                context.fillStyle = "rgb(0,0,0)";
+                context.fillRect(0, 0, data.render.width, data.render.height);
+            },
+            render: function (percent){
+                tools.draw.image(context, data.intro.rjstc, 64, 30, 1);
+                tools.draw.string(context, spritesheet, "press space",{x: 120, y: 170});
+            }
         }
+        
 	];
 	
 	var render = function(timestamp){
 		var now = requestAnimationFrame.now();
+		window.requestAnimationFrame(render);
 		
 	    // scalling
         domContext.drawImage(canvas, 0, 0, domCanvas.width, domCanvas.height);
@@ -153,51 +174,43 @@ var game = (function(){
 	
 	var renderer = {
 		intro : function (timestamp){
-			window.requestAnimationFrame(render);
-			
+		    
+		    // find current screen
 			var startTime = timestamp - previousTimestamp;
             var olderScreen = 0;
             var rendered = false;
-            for(var i=0; i < introScreens.length; i ++){
-                var screen = introScreens[i];
-                var time = startTime - olderScreen;
-
-                if(time < screen.duration){
-                    rendered = true;
-                    context.globalAlpha = 1.0;
-                    screen.clean();
-                    
-                    if(time < screen.fadein){
-                        context.globalAlpha = time / screen.fadein;
-                    } else if (time > screen.duration - screen.fadeout){
-                        context.globalAlpha = 1 - (time - screen.duration + screen.fadeout) / screen.fadeout;
-                    } else {
-                        context.globalAlpha = 1.0
-                    }
-                    screen.render(time / screen.duration * 100.0);
-                    break;
-                } else {
-                    olderScreen += screen.duration;
+            var i = 0;
+            var screen = introScreens[0];
+            var time = startTime - olderScreen;
+            while (time >= screen.duration) {
+                olderScreen += screen.duration;
+                if(++i >= introScreens.length){
+                    i = 0;
                 }
+                screen = introScreens[i];
+                time = startTime - olderScreen;
             }
-			if(!rendered){
-			    gameState = "menu";
-			    context.globalAlpha = 1.0;
-			}
+            
+            //render current screen
+            context.globalAlpha = 1.0;
+            screen.clean();
+            
+            if(time < screen.fadein){
+                context.globalAlpha = time / screen.fadein;
+            } else if (time > screen.duration - screen.fadeout){
+                context.globalAlpha = 1 - (time - screen.duration + screen.fadeout) / screen.fadeout;
+            } else {
+                context.globalAlpha = 1.0;
+            }
+            screen.render(time / screen.duration * 100.0);
+		    context.globalAlpha = 1.0;
 		}, 
 		menu : function (timestamp){
-	        context.fillStyle = "rgb(0,0,0)";
+	        context.fillStyle = "rgb(255,0,0)";
 	        context.fillRect(0, 0, data.render.width, data.render.height);
-	        
-	        tools.draw.image(context, data.intro.rjstc, 64, 30, 1);
-	        
-	        tools.draw.string(context, spritesheet, "press space",{x: 120, y: 170});
-	        
-	        window.requestAnimationFrame(render);
 		},
 		race : function(timestamp){
-	        var rAFid = window.requestAnimationFrame(render);
-	        
+		       
 	        // find the correct car sprite
 	        var carSprite = {
                 a: data.sprites.car,
@@ -265,6 +278,7 @@ var game = (function(){
 	        }
 	        
 	        var iter = data.render.depthOfField;
+	        
 	        while (iter--) {
 	            // Next Segment:
 	            var nextSegmentIndex       = (currentSegmentIndex + 1) % road.length;
@@ -299,7 +313,6 @@ var game = (function(){
                 // --------------------------
                 if(raceOver !== false){
                     if(player.position > currentSegmentIndex * data.road.segmentSize && player.position < (currentSegmentIndex + 1) * data.road.segmentSize){
-                        
                         var ratioPos = (player.position - currentSegmentIndex * data.road.segmentSize) / data.road.segmentSize;
                         var height   = startProjectedHeight + ratioPos * (endProjectedHeight-startProjectedHeight);
                         var scaling  = startScaling + ratioPos * (endScaling - startScaling);
@@ -369,22 +382,11 @@ var game = (function(){
 	            
 	            
 	            lastProjectedHeight    = currentHeight;
-	            
 	            probedDepth            = currentSegmentPosition;
-	
 	            currentSegmentIndex    = nextSegmentIndex;
 	            currentSegment         = nextSegment;
-	            
 	            currentSegmentPosition += data.road.segmentSize;
-	            
 	            counter = (counter + 1) % (2 * data.road.segmentPerColor);
-	            
-	            if(absoluteIndex >= road.length-data.render.depthOfField-1 && raceOver === false){
-		            tools.draw.string(context, spritesheet, "You did it!", {x: 100, y: 20});
-		            tools.draw.string(context, spritesheet, "Press t to tweet your time.", {x: 30, y: 30});
-		            $(window).keydown(function(e){ if(e.keyCode == 84) {location.href="http://twitter.com/home?status="+escape("I've just raced through #racer10k in "+currentTimeString+"!")}});
-		           	raceOver = player.position;
-		        }
 	        }
 	        
 	        // --------------------------
@@ -396,8 +398,20 @@ var game = (function(){
 	
 	        // --------------------------
 	        // --     Draw the hud     --
-	        // --------------------------        
-	        tools.draw.string(context, spritesheet, ""+Math.round(absoluteIndex/(road.length-data.render.depthOfField)*100)+"%",{x: 287, y: 1});
+	        // --------------------------
+	        if(absoluteIndex >= road.length-data.render.depthOfField-1 && raceOver === false){
+                //$(window).keydown(function(e){ if(e.keyCode == 84) {location.href="http://twitter.com/home?status="+escape("I've just raced through #racer10k in "+currentTimeString+"!")}});
+                raceOver = player.position;
+            }
+            if(raceOver){
+                tools.draw.string(context, spritesheet, "Finished!", {x: 100, y: 20});
+            } 
+            
+            var timePassed = timestamp - startTime;
+            var remainingTime = checkpointTime - Math.floor(timePassed /1000);
+            tools.draw.string(context, spritesheet, ""+remainingTime, {x: data.render.width / 2, y: 1});
+            
+	        /*tools.draw.string(context, spritesheet, ""+Math.round(absoluteIndex/(road.length-data.render.depthOfField)*100)+"%",{x: 287, y: 1});
 	        var diff = timestamp - startTime;
 	        
 	        var min = Math.floor(diff / 60000);
@@ -413,7 +427,7 @@ var game = (function(){
 	        
 	        tools.draw.string(context, spritesheet, currentTimeString, {x: 1, y: 1});
 	        var speed = Math.round(player.speed / player.maxSpeed * 420);
-	        tools.draw.string(context, spritesheet, ""+speed+"kph", {x: 1, y: 10});
+	        tools.draw.string(context, spritesheet, ""+speed+"kph", {x: 1, y: 10});*/
 	    }
 	}
 	
@@ -422,15 +436,26 @@ var game = (function(){
 			case "intro":
 				if(keys[32] || UP.on){
 		        	gameState = "menu";
-		        	context.globalAlpha = 1.0
+		        	context.globalAlpha = 1.0;
+		        	if(introMusic){
+		        	    introMusic.noteOff(0);
+		        	}
 		        }
 				break;
 			case "menu":
 				if(keys[32] || UP.on){
 		        	gameState = "race";
-		      		previousTimestamp = requestAnimationFrame.now();
-		            startTime = requestAnimationFrame.now();
+		      		//previousTimestamp = requestAnimationFrame.now();
+		            //startTime = requestAnimationFrame.now();
+		            startRace();
 		            context.globalAlpha = 1.0;
+		            
+		            if(audioContext){
+                        tools.loadSound(audioContext, data.sounds.musics.race, function(sound){
+                            raceMusic = sound;
+                            tools.playSound(audioContext, raceMusic);
+                        })
+                    }
 		        }
 				break;
 			case "race":
@@ -520,9 +545,7 @@ var game = (function(){
         
         // pseudo full screen mode
         tools.canvasResize();
-        $(window).resize(tools.canvasResize);
-        //tools.resize();
-        //$(window).resize(tools.resize);    
+        $(window).resize(tools.canvasResize);    
         
         //register key handeling:
         $(document).keydown(function(e){
@@ -534,13 +557,19 @@ var game = (function(){
         
         // road generation
         generateRoad(seed);
+        
+        // retrieve the audio context
+        try {
+            audioContext = new webkitAudioContext();
+        } catch(e) {
+            // fail silenty
+        }
     };
     
     // -------------------------------------
     // ---  Generates the road randomly  ---
     // -------------------------------------
     var generateRoad = function(seed){
-        
         
     	level = tools.parseSeed(seed);
     	var r = new tools.r(level.random);
@@ -600,7 +629,7 @@ var game = (function(){
                 // add a tree
                 if(r.nextFloat() < level.density) {
                     var spriteType = r.choice(data.levels[level.type].sprites);
-                    var sprite = {type: spriteType, pos: 0.7 + r.nextRange(0,4)};
+                    var sprite = {type: spriteType, pos: 0.7 + r.nextFloat()*4};
                     if(r.nextFloat() < 0.5){
                         sprite.pos = -sprite.pos;
                     }
@@ -629,7 +658,9 @@ var game = (function(){
         }
     };
         
-    // Touch control
+    // -------------------------------------
+    // ---         Touch control         ---
+    // -------------------------------------
     document.addEventListener('touchstart', function(e) {
     	e.preventDefault();
     	for (var i = 0; i < e.touches.length; i++){
@@ -671,8 +702,18 @@ var game = (function(){
             init();
             spritesheet = new Image();
             spritesheet.onload = function(){
-                previousTimestamp = requestAnimationFrame.now();
-                window.requestAnimationFrame(render);
+                
+                if(audioContext){
+                    tools.loadSound(audioContext, data.sounds.musics.intro, function(sound){
+                        introMusic = sound;
+                        tools.playSound(audioContext, introMusic);
+                        window.requestAnimationFrame(render);
+                        previousTimestamp = requestAnimationFrame.now();
+                    })
+                } else {
+                    window.requestAnimationFrame(render);
+                    previousTimestamp = requestAnimationFrame.now();
+                }
             };
             spritesheet.src = "spritesheet.complete.png";
         }

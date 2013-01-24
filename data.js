@@ -232,6 +232,12 @@ data.sprites = {
     }
 }
 
+data.sounds = {
+    musics: {
+        intro: "music/ashtom_pixel-rave_(low).mp3",
+        race:  "music/ashtom_bit-stream_(low).mp3"
+    }
+}
 
 data.render = {
     width: 320,

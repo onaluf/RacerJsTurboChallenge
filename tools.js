@@ -105,7 +105,7 @@ tools.r = function(seed) {
 tools.parseHash  = function(){
 	var defaultValue = {
 		//seed: "0001ZZZ0"
-		seed: "0011Z0Z0"
+		seed: "0019ZFZ0"
 	}
 	// TODO this is just a test implementation, more to come
 	if (window.location.hash !== undefined && window.location.hash.length === 9) {
@@ -157,6 +157,10 @@ tools.parseSeed = function(seed){
 
 tools.generateSeed = function(options){
 	return "TODO";
+}
+
+tools.generateNextCheckpointTime = function(level){
+    return level.length * 2;
 }
 
 // resize the canvas to make it take the full browser's window
@@ -283,4 +287,39 @@ tools.draw = {
             cur += 8;
         }
     }
-} 
+}
+
+tools.loadSound = function (audioContext, url, callback){
+    if(false /*audioContext*/){
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.responseType = 'arraybuffer';
+        
+        // Decode asynchronously
+        request.onload = function() {
+            audioContext.decodeAudioData(request.response, function(buffer) {
+                var source = audioContext.createBufferSource(); // creates a sound source
+                source.buffer = buffer;
+                
+                callback(source);
+            });
+        }
+        request.send();
+    } else {
+        callback();
+    }
+}
+
+tools.playSound = function (audioContext, sound){
+    if(false /*audioContext*/){
+        
+        // volume control
+        var gainNode = audioContext.createGainNode();
+        sound.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        gainNode.gain.value = 0.5;
+
+        // play sound
+        sound.noteOn(0);  
+    }
+}
