@@ -105,7 +105,7 @@ tools.r = function(seed) {
 tools.parseHash  = function(){
 	var defaultValue = {
 		//seed: "0001ZZZ0"
-		seed: "0019ZFZ0"
+		seed: "0011ZFZ0"
 	}
 	// TODO this is just a test implementation, more to come
 	if (window.location.hash !== undefined && window.location.hash.length === 9) {
@@ -266,6 +266,28 @@ tools.draw = {
         context.lineTo(demiWidth + delta2 * data.render.width * scale1 + offset1, pos1);
         context.fill();
     },
+    door: function(context, pos, scale, offset){
+    	var demiWidth = data.render.width / 2;
+    	context.fillStyle = "#FFF";
+        context.beginPath();
+        context.moveTo(demiWidth + (0.52 + 0.05 * scale) * data.render.width * scale + offset, pos);
+        context.lineTo(demiWidth + (0.52 + 0.05 * scale) * data.render.width * scale + offset, pos - 100 * scale); 
+        context.lineTo(demiWidth + 0.52 * data.render.width * scale + offset, pos - 100 * scale); 
+        context.lineTo(demiWidth + 0.52 * data.render.width * scale + offset, pos);
+        context.moveTo(demiWidth - (0.52 + 0.05 * scale) * data.render.width * scale + offset, pos);
+        context.lineTo(demiWidth - (0.52 + 0.05 * scale) * data.render.width * scale + offset, pos - 100 * scale); 
+        context.lineTo(demiWidth - 0.52 * data.render.width * scale + offset, pos - 100 * scale); 
+        context.lineTo(demiWidth - 0.52 * data.render.width * scale + offset, pos);
+        context.fill();
+        
+        context.fillStyle = "#F00";
+        context.beginPath();
+        context.moveTo(demiWidth + (0.52 + 0.05 * scale) * data.render.width * scale + offset, pos - 100 * scale);
+        context.lineTo(demiWidth + (0.52 + 0.05 * scale) * data.render.width * scale + offset, pos - 150 * scale); 
+        context.lineTo(demiWidth - (0.52 + 0.05 * scale) * data.render.width * scale + offset, pos - 150 * scale);
+        context.lineTo(demiWidth - (0.52 + 0.05 * scale) * data.render.width * scale + offset, pos - 100 * scale); 
+        context.fill();
+    },
     background: function(context, level, position, height) {
     	// Clean screen
         context.fillStyle = level.colors.sky;
@@ -413,8 +435,12 @@ tools.generateRoad = function(level){
     var currentHeight = 0;
     var currentCurve  = 0;
 
-    var zones         = level.length;
+    var zones         = 10 + level.length;
+    var numberOfCheckpoints = 2 + level.length /  5;
+    var numberOfZonesPerCheckpoints = zones / numberOfCheckpoints;
+    
     while(zones--){
+    	
         // Generate current Zone
         var finalHeight;
         switch(currentStateH){
@@ -441,20 +467,25 @@ tools.generateRoad = function(level){
         }
 
         for(var i=0; i < data.road.zoneSize; i++){
-            // add a tree
+        	var checkpoint = false;
+        	if (i == 0 && zones % numberOfZonesPerCheckpoints == 0 ) {
+	    		var checkpoint = true;
+	    	}
+	    	
+            // add a sprite
+            var sprite = false;
             if(r.nextFloat() < level.density) {
                 var spriteType = r.choice(data.levels[level.type].sprites);
-                var sprite = {type: spriteType, pos: 0.7 + r.nextFloat()*4};
+                sprite = {type: spriteType, pos: 0.7 + r.nextFloat()*4};
                 if(r.nextFloat() < 0.5){
                     sprite.pos = -sprite.pos;
                 }
-            } else {
-                var sprite = false;
             }
             road.push({
                 height: currentHeight+finalHeight / 2 * (1 + Math.sin(i/data.road.zoneSize * Math.PI-Math.PI/2)),
                 curve:  currentCurve+finalCurve / 2 * (1 + Math.sin(i/data.road.zoneSize * Math.PI-Math.PI/2)), 
-                sprite: sprite 
+                sprite: sprite,
+                checkpoint: checkpoint
             })
         }
         currentHeight += finalHeight;

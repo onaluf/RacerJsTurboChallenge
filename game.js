@@ -8,9 +8,11 @@ var game = (function(){
     var canvas;
     var context;
     var keys = [];
-    var startTime;         // time the current race as started
-	var stateTimestamp;    // time the current state has been set
-	var previousTimestamp; // time of the previous animation frame
+    var startTime;          // time the current race as started
+	var stateTimestamp;     // time the current state has been set
+	var previousTimestamp;  // time of the previous animation frame
+	var checkpointTime;     // time available to cross the section to next checkpoint
+	var lastCheckpointTime; // time the last checkpoint was crossed 
     var lastDelta = 0;
     var currentTimeString = "";
     var audioContext = false;
@@ -64,12 +66,13 @@ var game = (function(){
 	
 	var startRace = function(){
 		// road generation
-		level          = tools.parseSeed(seed);
-		var generated  = tools.generateRoad(level);
-        road           = generated.road;
-        opponents      = generated.opponents;
-        startTime      = requestAnimationFrame.now();
-        checkpointTime = tools.generateNextCheckpointTime(level);
+		level              = tools.parseSeed(seed);
+		var generated      = tools.generateRoad(level);
+        road               = generated.road;
+        opponents          = generated.opponents;
+        startTime          = requestAnimationFrame.now();
+        checkpointTime     = tools.generateNextCheckpointTime(level);
+		lastCheckpointTime = startTime;
 	};
 	
 	var render = function(timestamp){
@@ -148,6 +151,7 @@ var game = (function(){
             	}
 			}
 	        var spriteBuffer = [];
+	        var doorBuffer = [];
 	        
 	        // --------------------------
 	        // --   Render the road    --
@@ -194,6 +198,8 @@ var game = (function(){
 	        
 	        var iter = data.render.depthOfField;
 	        
+	        var checkpointCrossed = false;
+	        
 	        while (iter--) {
 	            // Next Segment:
 	            var nextSegmentIndex       = (currentSegmentIndex + 1) % road.length;
@@ -211,6 +217,7 @@ var game = (function(){
 	            // --------------------------
                 // --   DRAW THE SEGMENT   --
                 // --------------------------
+                var door = currentSegmentIndex == 2 || currentSegmentIndex == (road.length-data.render.depthOfField) || currentSegment.checkpoint;
 	            if(currentHeight > endProjectedHeight){
 	               tools.draw.segment(
 	               		context,
@@ -220,7 +227,16 @@ var game = (function(){
 	                    data.render.height / 2 + endProjectedHeight, 
 	                    endScaling, 
 	                    nextSegment.curve - baseOffset - lastDelta * endScaling, 
-	                    counter < data.road.segmentPerColor, currentSegmentIndex == 2 || currentSegmentIndex == (road.length-data.render.depthOfField));
+	                    counter < data.road.segmentPerColor, 
+	                    door);
+	            }
+	            if(door){
+	            	spriteBuffer.push({
+	            		door:     true,
+	            		position: data.render.height / 2 + currentHeight,
+	            		scale:    currentScaling,
+	            		offset:   currentSegment.curve - baseOffset - lastDelta * currentScaling
+	            	});
 	            }
 	            
 	            // --------------------------
@@ -241,6 +257,9 @@ var game = (function(){
                     }
                 } else {
                     if (iter == data.render.depthOfField - 3){
+                    	if(currentSegment.checkpoint){
+                    		checkpointCrossed = true;
+                    	}
                         spriteBuffer.push({
                             x: carSprite.x,
                             y: carSprite.y + carSprite.a.h, 
@@ -308,7 +327,11 @@ var game = (function(){
             // --     DRAW THE SPRITES --
             // --------------------------
 	        while(sprite = spriteBuffer.pop()) {
-	            tools.draw.sprite(context, sprite);
+	        	if (sprite.door){
+	        		tools.draw.door(context, sprite.position, sprite.scale, sprite.offset);
+	        	} else {
+		            tools.draw.sprite(context, sprite);
+	        	}
 	        }
 	
 	        // --------------------------
@@ -322,12 +345,20 @@ var game = (function(){
                 tools.draw.string(context, spritesheet, "Finished!", {x: 100, y: 20});
             } 
             
-            var timePassed = timestamp - startTime;
+            var timePassed = timestamp - lastCheckpointTime;
             var remainingTime = checkpointTime - Math.floor(timePassed /1000);
             tools.draw.string(context, spritesheet, ""+remainingTime, {x: data.render.width / 2, y: 1});
+            if(checkpointCrossed){
+            	checkpointTime += remainingTime;
+            	lastCheckpointTime = requestAnimationFrame.now();
+            } else {
+            	if (remainingTime < 0){
+                	tools.draw.string(context, spritesheet, "Game Over!", {x: 100, y: 20});
+            	}
+            }
             
             var speed = Math.round(player.speed / player.maxSpeed * 420);
-	        tools.draw.string(context, spritesheet, ""+speed+"kph", {x: 1, y: 10});
+	        tools.draw.string(context, spritesheet, ""+speed+"kph", {x: 1, y: 1});
 	        
 	        /*tools.draw.string(context, spritesheet, ""+Math.round(absoluteIndex/(road.length-data.render.depthOfField)*100)+"%",{x: 287, y: 1});
 	        var diff = timestamp - startTime;
