@@ -342,23 +342,23 @@ var game = (function(){
                 raceOver = player.position;
             }
             if(raceOver){
-                tools.draw.string(context, spritesheet, "Finished!", {x: 100, y: 20});
+                tools.draw.string(context, spritesheet, 1, "Finished!", {x: 100, y: 20});
             } 
             
             var timePassed = timestamp - lastCheckpointTime;
             var remainingTime = checkpointTime - Math.floor(timePassed /1000);
-            tools.draw.string(context, spritesheet, ""+remainingTime, {x: data.render.width / 2, y: 1});
+            tools.draw.string(context, spritesheet, 1, ""+remainingTime, {x: data.render.width / 2, y: 1});
             if(checkpointCrossed){
             	checkpointTime += remainingTime;
             	lastCheckpointTime = requestAnimationFrame.now();
             } else {
             	if (remainingTime < 0){
-                	tools.draw.string(context, spritesheet, "Game Over!", {x: 100, y: 20});
+                	tools.draw.string(context, spritesheet, 1, "Game Over!", {x: 100, y: 20});
             	}
             }
             
             var speed = Math.round(player.speed / player.maxSpeed * 420);
-	        tools.draw.string(context, spritesheet, ""+speed+"kph", {x: 1, y: 1});
+	        tools.draw.string(context, spritesheet, 1, ""+speed+"kph", {x: 1, y: 1});
 	        
 	        /*tools.draw.string(context, spritesheet, ""+Math.round(absoluteIndex/(road.length-data.render.depthOfField)*100)+"%",{x: 287, y: 1});
 	        var diff = timestamp - startTime;

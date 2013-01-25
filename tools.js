@@ -301,12 +301,22 @@ tools.draw = {
         tools.draw.image(context, level.background, first+level.background.w -1, height, 1);
         tools.draw.image(context, level.background, first, height, 1);
     },
-    string: function(context, spritesheet, string, pos) {
-        string = string.toUpperCase();
+    string: function(context, spritesheet, font, string, pos) {
+        if(font == 0){
+            string = string.toUpperCase();
+        }
         var cur = pos.x;
         for(var i=0; i < string.length; i++) {
-            context.drawImage(spritesheet, (string.charCodeAt(i) - 32) * 8, 0, 8, 8, cur, pos.y, 8, 8);
-            cur += 8;
+            switch (font) {
+                case 0: 
+                    context.drawImage(spritesheet, (string.charCodeAt(i) - 32) * 8, 0, 8, 8, cur, pos.y, 8, 8);
+                    cur += 8;
+                    break;
+                case 1: 
+                    context.drawImage(spritesheet, (string.charCodeAt(i) - 34) * 9, 8, 9, 13, cur, pos.y, 9, 13);
+                    cur += 9;
+                    break;
+            }
         }
     }
 }
@@ -353,9 +363,9 @@ tools.introScreens  = [
             tools.draw.image(context, data.intro.road, 0, 0, 1);
         },
         render:  function (context, percent){
-            tools.draw.string(context, spritesheet, "Code + Art",{x: 115, y: 90});
-            tools.draw.string(context, spritesheet, "by",{x: 152, y: 100});
-            tools.draw.string(context, spritesheet, "Selim Arsever",{x: 105, y: 110});
+            tools.draw.string(context, spritesheet, 1, "Code ' Art",{x: 115, y: 90});
+            tools.draw.string(context, spritesheet, 1, "by",{x: 152, y: 100});
+            tools.draw.string(context, spritesheet, 1, "Selim Arsever",{x: 105, y: 110});
         }
     },{
         duration: 4000,
@@ -365,9 +375,9 @@ tools.introScreens  = [
             tools.draw.image(context, data.intro.road, 0, 0, 1);
         },
         render:  function (context, percent){
-            tools.draw.string(context, spritesheet, "Music",{x: 140, y: 90});
-            tools.draw.string(context, spritesheet, "by",{x: 152, y: 100});
-            tools.draw.string(context, spritesheet, "Ashtom",{x: 137, y: 110});
+            tools.draw.string(context, spritesheet, 1, "Music",{x: 140, y: 90});
+            tools.draw.string(context, spritesheet, 1, "by",{x: 152, y: 100});
+            tools.draw.string(context, spritesheet, 1, "Ashtom",{x: 137, y: 110});
         }
     },{
         duration: 4000,
@@ -377,9 +387,9 @@ tools.introScreens  = [
             tools.draw.image(context, data.intro.road, 0, 0, 1);
         },
         render:  function (context, percent){
-            tools.draw.string(context, spritesheet, "Fonts",{x: 140, y: 90});
-            tools.draw.string(context, spritesheet, "by",{x: 152, y: 100});
-            tools.draw.string(context, spritesheet, "spicypixel.net",{x: 105, y: 110});
+            tools.draw.string(context, spritesheet, 1, "Fonts",{x: 140, y: 90});
+            tools.draw.string(context, spritesheet, 1, "by",{x: 152, y: 100});
+            tools.draw.string(context, spritesheet, 1, "spicypixel.net",{x: 105, y: 110});
         }
     },{
         duration: 2000,
@@ -402,7 +412,7 @@ tools.introScreens  = [
         },
         render: function (context, percent){
             tools.draw.image(context, data.intro.rjstc, 64, 30, 1);
-            tools.draw.string(context, spritesheet, "press space",{x: 120, y: 170});
+            tools.draw.string(context, spritesheet, 1, "press space",{x: 120, y: 170});
         }
     }
 ];
