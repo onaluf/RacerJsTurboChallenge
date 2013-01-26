@@ -38,7 +38,7 @@ var game = (function(){
     };
     
     var gameState;
-	var raceOver = false;
+	var raceWon = false;
 	var level;
 	
 	// touch vars
@@ -70,8 +70,8 @@ var game = (function(){
 		var generated      = tools.generateRoad(level);
         road               = generated.road;
         opponents          = generated.opponents;
-        startTime          = requestAnimationFrame.now();
-        checkpointTime     = tools.generateNextCheckpointTime(level);
+        startTime          = requestAnimationFrame.now() - stateTimestamp;
+        checkpointTime     = tools.generateNextCheckpointTime(level, 0);
 		lastCheckpointTime = startTime;
 	};
 	
@@ -124,8 +124,13 @@ var game = (function(){
 		    context.globalAlpha = 1.0;
 		}, 
 		menu : function (timestamp, delat){
-	        context.fillStyle = "rgb(255,0,0)";
+	        context.fillStyle = "rgb(50,50,50)";
 	        context.fillRect(0, 0, data.render.width, data.render.height);
+	        context.fillStyle = "rgb(255,0,0)";
+	        context.fillRect(40, 40, 240, 50);
+	        tools.draw.string(context, spritesheet, 1, "Championship",{x: 55, y: 55});
+	        context.fillRect(40, 140, 240, 50);
+	        tools.draw.string(context, spritesheet, 1, "Time Attack",{x: 55, y: 155});
 		},
 		race : function(timestamp, delta){
 		       
@@ -157,11 +162,11 @@ var game = (function(){
 	        // --   Render the road    --
 	        // --------------------------
 	        var absoluteIndex, currentSegmentIndex, currentSegmentPosition, playerPosRelative;
-	        if (raceOver !== false){
-		        absoluteIndex = Math.floor(raceOver / data.road.segmentSize);
+	        if (raceWon !== false){
+		        absoluteIndex = Math.floor(raceWon / data.road.segmentSize);
 		        currentSegmentIndex        = (absoluteIndex - 2) % road.length;
-		        currentSegmentPosition     = (absoluteIndex - 2) * data.road.segmentSize - raceOver;
-		        playerPosRelative          = (raceOver % data.road.segmentSize) / data.road.segmentSize;
+		        currentSegmentPosition     = (absoluteIndex - 2) * data.road.segmentSize - raceWon;
+		        playerPosRelative          = (raceWon % data.road.segmentSize) / data.road.segmentSize;
 	        } else {
 	        	absoluteIndex = Math.floor(player.position / data.road.segmentSize);
 		        currentSegmentIndex        = (absoluteIndex - 2) % road.length;
@@ -189,7 +194,7 @@ var game = (function(){
 	        // Opponent rendering variables 
 	        var opponentBuffer = [];
 	        var firstCarIndex = 0;
-	        var distanceDriven = 1.0 * (timestamp - startTime)/30.0;
+	        var distanceDriven = 6.0 * (timestamp - startTime)/30.0;
 	        var checked = 0;
 	        var i = 0;
 	        if(player.immunity > 0){
@@ -242,7 +247,7 @@ var game = (function(){
 	            // --------------------------
                 // --     DRAW THE CAR     --
                 // --------------------------
-                if(raceOver !== false){
+                if(raceWon !== false){
                     if(player.position > currentSegmentIndex * data.road.segmentSize && player.position < (currentSegmentIndex + 1) * data.road.segmentSize){
                         var ratioPos = (player.position - currentSegmentIndex * data.road.segmentSize) / data.road.segmentSize;
                         var height   = startProjectedHeight + ratioPos * (endProjectedHeight-startProjectedHeight);
@@ -337,11 +342,11 @@ var game = (function(){
 	        // --------------------------
 	        // --     Draw the hud     --
 	        // --------------------------
-	        if(absoluteIndex >= road.length-data.render.depthOfField-1 && raceOver === false){
+	        if(absoluteIndex >= road.length-data.render.depthOfField-1 && raceWon === false){
                 //$(window).keydown(function(e){ if(e.keyCode == 84) {location.href="http://twitter.com/home?status="+escape("I've just raced through #racer10k in "+currentTimeString+"!")}});
-                raceOver = player.position;
+                raceWon = player.position;
             }
-            if(raceOver){
+            if(raceWon){
                 tools.draw.string(context, spritesheet, 1, "Finished!", {x: 100, y: 20});
             } 
             
@@ -350,7 +355,7 @@ var game = (function(){
             tools.draw.string(context, spritesheet, 1, ""+remainingTime, {x: data.render.width / 2, y: 1});
             if(checkpointCrossed){
             	checkpointTime += remainingTime;
-            	lastCheckpointTime = requestAnimationFrame.now();
+            	lastCheckpointTime = requestAnimationFrame.now() - startTime;
             } else {
             	if (remainingTime < 0){
                 	tools.draw.string(context, spritesheet, 1, "Game Over!", {x: 100, y: 20});
@@ -391,7 +396,7 @@ var game = (function(){
 	        }
 		},
 		menu:  function(timestamp, delta){
-			if(keys[32] || UP.on){
+			if(keys[13] || UP.on){
 				changeState("race");
 	            startRace();
 	            context.globalAlpha = 1.0;
@@ -407,7 +412,7 @@ var game = (function(){
 		race:  function(timestamp, delta){
 			var deltaT = delta / 30.0;
 	        
-		    if(raceOver === false){
+		    if(raceWon === false){
 				
 		        // --------------------------
 		        // -- Update the car state --

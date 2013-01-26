@@ -144,7 +144,7 @@ tools.parseSeed = function(seed){
 	}
 	var racesType = ["desert", "forest", "swamp",  "dawn", "fog", "rain", "snow"];
 	
-	return {
+	var level = {
 		random     : seed[0] + seed[1] * 36,
 		type       : racesType[toInt(seed[2])],
 		length     : toInt(seed[3]) + 1,
@@ -152,15 +152,23 @@ tools.parseSeed = function(seed){
 		mountainy  : toInt(seed[5]) / 36.0,
 		density    : toInt(seed[6]) / 36.0,
 		difficulty : toInt(seed[7])
-	}
+	};
+	
+	level.zones  = 10 + level.length;
+    level.numberOfCheckpoints = Math.round(2 + level.length /  5);
+	level.numberOfZonesPerCheckpoints = Math.round(level.zones / level.numberOfCheckpoints);
+	
+	// TODO console.info("zone: "+level.zones+",Checkpoints: "+level.numberOfCheckpoints+",z/p: "+level.numberOfZonesPerCheckpoints);
+	
+	return level;
 }
 
 tools.generateSeed = function(options){
 	return "TODO";
 }
 
-tools.generateNextCheckpointTime = function(level){
-    return level.length * 5;
+tools.generateNextCheckpointTime = function(level, index){
+    return (1 - 0.1 * index) * level.numberOfZonesPerCheckpoints * data.road.zoneSize / 50;
 }
 
 // resize the canvas to make it take the full browser's window
@@ -313,7 +321,7 @@ tools.draw = {
                     cur += 8;
                     break;
                 case 1: 
-                    context.drawImage(spritesheet, (string.charCodeAt(i) - 34) * 9, 8, 9, 13, cur, pos.y, 9, 13);
+                    context.drawImage(spritesheet, (string.charCodeAt(i) - 33) * 9, 8, 9, 13, cur, pos.y, 9, 13);
                     cur += 9;
                     break;
             }
@@ -363,7 +371,7 @@ tools.introScreens  = [
             tools.draw.image(context, data.intro.road, 0, 0, 1);
         },
         render:  function (context, percent){
-            tools.draw.string(context, spritesheet, 1, "Code ' Art",{x: 115, y: 90});
+            tools.draw.string(context, spritesheet, 1, "Code & Art",{x: 115, y: 90});
             tools.draw.string(context, spritesheet, 1, "by",{x: 152, y: 100});
             tools.draw.string(context, spritesheet, 1, "Selim Arsever",{x: 105, y: 110});
         }
@@ -445,12 +453,10 @@ tools.generateRoad = function(level){
     var currentHeight = 0;
     var currentCurve  = 0;
 
-    var zones         = 10 + level.length;
-    var numberOfCheckpoints = 2 + level.length /  5;
-    var numberOfZonesPerCheckpoints = zones / numberOfCheckpoints;
+    var zones         = level.zones;
+    var finishline = zones * data.road.zoneSize - data.render.depthOfField;
     
     while(zones--){
-    	
         // Generate current Zone
         var finalHeight;
         switch(currentStateH){
@@ -475,10 +481,9 @@ tools.generateRoad = function(level){
                 finalCurve = data.road.maxCurve * r.nextFloat();
                 break;
         }
-
         for(var i=0; i < data.road.zoneSize; i++){
         	var checkpoint = false;
-        	if (i == 0 && zones % numberOfZonesPerCheckpoints == 0 ) {
+        	if (zones % level.numberOfZonesPerCheckpoints == 0 && i == Math.round(data.road.zoneSize / 2) && road.length < finishline) {
 	    		var checkpoint = true;
 	    	}
 	    	
@@ -520,7 +525,7 @@ tools.generateRoad = function(level){
 };
 
 tools.loadSound = function (audioContext, url, callback){
-    if(false /*audioContext*/){
+    if(false/*audioContext*/){
         var request = new XMLHttpRequest();
         request.open('GET', url, true);
         request.responseType = 'arraybuffer';
@@ -541,7 +546,7 @@ tools.loadSound = function (audioContext, url, callback){
 }
 
 tools.playSound = function (audioContext, sound){
-    if(false /*audioContext*/){
+    if(false/*audioContext*/){
         
         // volume control
         var gainNode = audioContext.createGainNode();
