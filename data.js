@@ -19,9 +19,13 @@ data.road = {
     maxOpponentDist: 350
 }
 
+data.championship = [
+]
+
 //Level definition
 data.levels = {
 	desert : {
+	    name: "Desert",
 		background : {
 	        x: 704,
 	        y: 21,
@@ -54,9 +58,16 @@ data.levels = {
                 w: 25,
                 h: 22
             }
-        ]
+        ],
+        splash: {
+            x: 557,
+            y: 75,
+            w: 116,
+            h: 66
+        }
 	},
     forest : {
+        name: "Forest",
         background : {
             x: 704,
             y: 141,
@@ -94,7 +105,13 @@ data.levels = {
                 w: 31,
                 h: 46
             }
-        ]
+        ],
+        splash: {
+            x: 557,
+            y: 195,
+            w: 116,
+            h: 66
+        }
     }
 }
 
@@ -236,6 +253,12 @@ data.sprites = {
     	w: 320,
     	h: 240
     },
+    levelIntroBackground: {
+        x: 320,
+        y: 533,
+        w: 320,
+        h: 240
+    },
     buttonL: {
     	x: 514,
     	y: 168,
@@ -326,7 +349,8 @@ data.menus = {
 	championshipStart: {
 		type: "final",
 		name: "Start",
-		description: "Start championship."
+		description: "Start championship.",
+		gameMode: "championship"
 	},
 	timeattack: {
 		type: "standard",
@@ -336,7 +360,7 @@ data.menus = {
 		buttons: ["random","custom"]
 	},
 	random: {
-		type: "final",
+		type: "standard",
 		name: "Random track",
 		icon: data.sprites.icons.interogation,
 		description: "Race on a randomly\ngenerated track.",
@@ -352,7 +376,8 @@ data.menus = {
 	randomStart: {
 		type: "final",
 		name: "Start",
-		description: "Start championship."
+		description: "Start championship.",
+		gameMode: "random"
 	},
 	custom: {
 		type: "standard",

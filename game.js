@@ -18,17 +18,12 @@ var game = (function(){
     var audioContext = false;
     var introMusic;
     var raceMusic;
-    var menuBreadcrumb = [];
     
+    var menuBreadcrumb = [];
     var menuScreen = "main";
     var selectedButton = 0;
     var activeButton = [];
     
-    var seed = tools.parseHash();
-    
-    var road = [];
-    var opponents = [];
-   
     var player = {
         position: 10,
         speed: 0,
@@ -43,7 +38,13 @@ var game = (function(){
     };
     
     var gameState;
+    var gameMode;
+    var soundReady = false;
+    var seed = tools.parseHash();
+    var road = [];
+    var opponents = [];
 	var raceWon = false;
+	var raceLost = false;
 	var level;
 	
 	// touch vars
@@ -69,13 +70,19 @@ var game = (function(){
 		stateTimestamp = requestAnimationFrame.now();
 	};
 	
-	var startRace = function(){
-		// road generation
+	var prepareRace = function(){
 		level              = tools.parseSeed(seed);
-		var generated      = tools.generateRoad(level);
+		var generated      = tools.generateRoad(level);	    
         road               = generated.road;
         opponents          = generated.opponents;
         startTime          = requestAnimationFrame.now() - stateTimestamp;
+
+        raceWon = false;
+        raceLost = false;
+	}
+	
+	var startRace = function(){
+		// road generation
         checkpointTime     = tools.generateNextCheckpointTime(level, 0);
 		lastCheckpointTime = startTime;
 	};
@@ -89,7 +96,7 @@ var game = (function(){
         
         // call the correct renderer:
         renderer[gameState](timestamp - stateTimestamp, timestamp - previousTimestamp);
-        control[gameState](timestamp, timestamp - previousTimestamp);
+        control[gameState](timestamp - stateTimestamp, timestamp - previousTimestamp);
         
         previousTimestamp = timestamp;
 	}
@@ -174,6 +181,14 @@ var game = (function(){
 		        tools.draw.button(context, buttonState, {x: 5, y: 205}, 45);
 				tools.draw.string(context, spritesheet, 1, "Back", {x: 10, y: 210});
 	        }
+		},
+		splash: function (timestamp, delta) {
+		    tools.draw.image(context, data.levels[level.type].splash, 102, 62, 1);
+		    tools.draw.image(context, data.sprites.levelIntroBackground, 0, 0, 1);
+		    tools.draw.string(context, spritesheet, 1, "Championship", {x: data.render.width / 2, y: 20}, true);
+		    tools.draw.string(context, spritesheet, 1, "Stage 1/2 - Forest Level", {x: data.render.width / 2, y: 40}, true);
+		    tools.draw.string(context, spritesheet, 1, "Race: " + seed, {x: data.render.width / 2, y: 160}, true);
+		    tools.draw.string(context, spritesheet, 1, "Get Ready!", {x: data.render.width / 2, y: 180}, true);
 		},
 		race : function(timestamp, delta){
 		       
@@ -290,7 +305,7 @@ var game = (function(){
 	            // --------------------------
                 // --     DRAW THE CAR     --
                 // --------------------------
-                if(raceWon !== false){
+                if(raceWon){
                     if(player.position > currentSegmentIndex * data.road.segmentSize && player.position < (currentSegmentIndex + 1) * data.road.segmentSize){
                         var ratioPos = (player.position - currentSegmentIndex * data.road.segmentSize) / data.road.segmentSize;
                         var height   = startProjectedHeight + ratioPos * (endProjectedHeight-startProjectedHeight);
@@ -304,10 +319,11 @@ var game = (function(){
                             i: carSprite.a});
                     }
                 } else {
-                    if (iter == data.render.depthOfField - 3){
-                    	if(currentSegment.checkpoint){
+                    if (iter >= data.render.depthOfField - 3){
+                    	if(currentSegment.checkpoint &&  timestamp - lastCheckpointTime > 2000){
                     		checkpointCrossed = true;
                     	}
+                    	
                         spriteBuffer.push({
                             x: carSprite.x,
                             y: carSprite.y + carSprite.a.h, 
@@ -385,24 +401,27 @@ var game = (function(){
 	        // --------------------------
 	        // --     Draw the hud     --
 	        // --------------------------
-	        if(absoluteIndex >= road.length-data.render.depthOfField-1 && raceWon === false){
-                //$(window).keydown(function(e){ if(e.keyCode == 84) {location.href="http://twitter.com/home?status="+escape("I've just raced through #racer10k in "+currentTimeString+"!")}});
-                raceWon = player.position;
-            }
-            if(raceWon){
-                tools.draw.string(context, spritesheet, 1, "Finished!", {x: 100, y: 20});
-            } 
-            
             var timePassed = timestamp - lastCheckpointTime;
             var remainingTime = checkpointTime - Math.floor(timePassed /1000);
-            tools.draw.string(context, spritesheet, 1, ""+remainingTime, {x: data.render.width / 2, y: 1});
-            if(checkpointCrossed){
+            if(checkpointCrossed !== false){
             	checkpointTime += remainingTime;
             	lastCheckpointTime = requestAnimationFrame.now() - startTime;
             } else {
             	if (remainingTime < 0){
-                	tools.draw.string(context, spritesheet, 1, "Game Over!", {x: 100, y: 20});
+            	    raceLost = true;
             	}
+            }
+            
+	        if(absoluteIndex >= road.length-data.render.depthOfField-1 && raceWon === false){
+                raceWon = player.position;
+            }
+            
+            if(raceLost !== false){
+            	tools.draw.string(context, spritesheet, 1, "Game Over!", {x: data.render.width / 2, y: 20}, true);
+            } else if (raceWon !== false){
+                tools.draw.string(context, spritesheet, 1, "Finished!", {x: data.render.width / 2, y: 20}, true);
+            } else {
+                tools.draw.string(context, spritesheet, 1, ""+remainingTime, {x: data.render.width / 2, y: 1});
             }
             
             var speed = Math.round(player.speed / player.maxSpeed * 420);
@@ -451,17 +470,27 @@ var game = (function(){
                     })
                 }
 	        }*/
-	        
+		},
+		splash: function(timestamp, delta){
+		    if (timestamp > 2000 && soundReady){
+		        changeState("race");
+		        if(audioContext){
+                    tools.playSound(audioContext, raceMusic);
+                }
+		        startRace();
+		    };
 		},
 		race:  function(timestamp, delta){
 			var deltaT = delta / 30.0;
-	        
-		    if(raceWon === false){
-				
+	        if(raceLost){
+	            // nothing ?
+	        } else if(raceWon){
+	            player.position += player.speed * deltaT;
+	            
+	        } else {
 		        // --------------------------
 		        // -- Update the car state --
 		        // --------------------------
-		        
 		        var acceleration = -player.deceleration;
 		        if (keys[40]) {
 		        	acceleration = -player.breaking;
@@ -508,8 +537,6 @@ var game = (function(){
 		        
 		        player.position += player.speed * deltaT //* Math.cos(Math.PI / 180 * player.steering);
 		        player.posx     += player.speed * deltaT * Math.sin(Math.PI / 180 * player.steering) * steeringBonus;
-	        } else {
-	            player.position += player.speed * deltaT;
 	        }
 		}
 	};
@@ -605,7 +632,6 @@ var game = (function(){
 		   			var buttonScreen = data.menus[screen.buttons[selectedButton]];
 			   		switch (buttonScreen.type){
 		        		case "standard":
-		        		case "final":
 		        			menuBreadcrumb.push(menuScreen);
 							menuScreen = screen.buttons[selectedButton];
 							selectedButton = 0;
@@ -613,6 +639,18 @@ var game = (function(){
 		        		case "multipleChoice":
 		        			buttonScreen.active = buttonScreen.selected;
 		        			break;
+		        		case "final":
+                            prepareRace();
+		        		    gameMode = screen.gameMode;
+		        		    changeState("splash");
+                            
+                            if(audioContext){
+                                tools.loadSound(audioContext, data.sounds.musics.race, function(sound){
+                                    raceMusic = sound;
+                                    soundReady = true;
+                                });
+                            }
+		        		    break;
 		        	}
 		   		}
 		   		
@@ -671,7 +709,7 @@ var game = (function(){
                         tools.playSound(audioContext, introMusic);
                         window.requestAnimationFrame(render);
                     	changeState("intro");
-                    })
+                    });
                 } else {
                     window.requestAnimationFrame(render);
                     changeState("intro");
