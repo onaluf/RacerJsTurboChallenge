@@ -309,20 +309,75 @@ tools.draw = {
         tools.draw.image(context, level.background, first+level.background.w -1, height, 1);
         tools.draw.image(context, level.background, first, height, 1);
     },
-    string: function(context, spritesheet, font, string, pos) {
+    button : function(context, state, pos, width){
+    	context.drawImage(spritesheet, data.sprites.buttonL.x, data.sprites.buttonL.y, data.sprites.buttonL.w, data.sprites.buttonL.h, pos.x, pos.y, data.sprites.buttonL.w, data.sprites.buttonL.h);
+    	context.drawImage(spritesheet, data.sprites.buttonM.x, data.sprites.buttonM.y, data.sprites.buttonM.w, data.sprites.buttonM.h, pos.x + data.sprites.buttonL.w , pos.y, width - data.sprites.buttonL.w - data.sprites.buttonR.w, data.sprites.buttonM.h);
+    	context.drawImage(spritesheet, data.sprites.buttonR.x, data.sprites.buttonR.y, data.sprites.buttonR.w, data.sprites.buttonR.h, pos.x + width - data.sprites.buttonR.w, pos.y, data.sprites.buttonR.w, data.sprites.buttonR.h);
+    	
+    	if(state === 1){
+    		context.drawImage(spritesheet, data.sprites.focusL.x, data.sprites.focusL.y, data.sprites.focusL.w, data.sprites.focusL.h, pos.x - 2, pos.y - 2, data.sprites.focusL.w, data.sprites.focusL.h);
+    		context.drawImage(spritesheet, data.sprites.focusM.x, data.sprites.focusM.y, data.sprites.focusM.w, data.sprites.focusM.h, pos.x -2 + data.sprites.focusL.w , pos.y - 2, width - data.sprites.focusL.w - data.sprites.focusR.w + 4, data.sprites.focusM.h);
+    		context.drawImage(spritesheet, data.sprites.focusR.x, data.sprites.focusR.y, data.sprites.focusR.w, data.sprites.focusR.h, pos.x + width - data.sprites.focusR.w + 2, pos.y - 2, data.sprites.focusR.w, data.sprites.focusR.h);
+    	} else if (state === 2) {
+    		context.drawImage(spritesheet, data.sprites.activeL.x, data.sprites.activeL.y, data.sprites.activeL.w, data.sprites.activeL.h, pos.x - 2, pos.y - 2, data.sprites.activeL.w, data.sprites.activeL.h);
+    		context.drawImage(spritesheet, data.sprites.activeM.x, data.sprites.activeM.y, data.sprites.activeM.w, data.sprites.activeM.h, pos.x -2 + data.sprites.activeL.w , pos.y - 2, width - data.sprites.activeL.w - data.sprites.activeR.w + 4, data.sprites.activeM.h);
+    		context.drawImage(spritesheet, data.sprites.activeR.x, data.sprites.activeR.y, data.sprites.activeR.w, data.sprites.activeR.h, pos.x + width - data.sprites.activeR.w + 2, pos.y - 2, data.sprites.activeR.w, data.sprites.activeR.h);
+    	}
+    	//tools.draw.image(context, data.sprites.buttonL, first-level.background.w +1, height, 1);
+    },
+    string: function(context, spritesheet, font, string, pos, center) {
+    	var initialCurx = pos.x;
+        var cury = pos.y;
+    	if(center){
+    		// find max width
+			var maxLength     = 0;
+			var currentLength = 0;
+    		for(var i=0; i < string.length; i++) {
+    			if (string[i]==="\n"){
+    				if (currentLength > maxLength){
+    					maxLength = currentLength;
+    				}
+    				currentLength = 0;
+    			} else {
+	    			currentLength++;
+    			}
+    		}
+    		if (currentLength > maxLength){
+				maxLength = currentLength;
+			}
+			// define the initial x
+    		switch (font) {
+                case 0: 
+                    initialCurx = pos.x - maxLength * 8 / 2;
+                    break;
+                case 1: 
+                    initialCurx = pos.x - maxLength * 9 / 2;
+                    break;
+            }
+    	}
+        var curx = initialCurx;
         if(font == 0){
             string = string.toUpperCase();
         }
-        var cur = pos.x;
         for(var i=0; i < string.length; i++) {
             switch (font) {
                 case 0: 
-                    context.drawImage(spritesheet, (string.charCodeAt(i) - 32) * 8, 0, 8, 8, cur, pos.y, 8, 8);
-                    cur += 8;
+                	if(string[i]==="\n"){                		
+                    	curx = initialCurx;
+                    	cury += 8;
+                	} else {
+	                    context.drawImage(spritesheet, (string.charCodeAt(i) - 32) * 8, 0, 8, 8, curx, cury, 8, 8);
+	                    curx += 8;
+                	}
                     break;
                 case 1: 
-                    context.drawImage(spritesheet, (string.charCodeAt(i) - 33) * 9, 8, 9, 13, cur, pos.y, 9, 13);
-                    cur += 9;
+                    if(string[i]==="\n"){                		
+                    	curx = initialCurx;
+                    	cury += 13;
+                	} else {
+	                    context.drawImage(spritesheet, (string.charCodeAt(i) - 33) * 9, 8, 9, 13, curx, cury, 9, 13);
+	                    curx += 9;
+                	}
                     break;
             }
         }

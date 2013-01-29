@@ -18,6 +18,11 @@ var game = (function(){
     var audioContext = false;
     var introMusic;
     var raceMusic;
+    var menuBreadcrumb = [];
+    
+    var menuScreen = "main";
+    var selectedButton = 0;
+    var activeButton = [];
     
     var seed = tools.parseHash();
     
@@ -124,13 +129,51 @@ var game = (function(){
 		    context.globalAlpha = 1.0;
 		}, 
 		menu : function (timestamp, delat){
-	        context.fillStyle = "rgb(50,50,50)";
-	        context.fillRect(0, 0, data.render.width, data.render.height);
-	        context.fillStyle = "rgb(255,0,0)";
-	        context.fillRect(40, 40, 240, 50);
-	        tools.draw.string(context, spritesheet, 1, "Championship",{x: 55, y: 55});
-	        context.fillRect(40, 140, 240, 50);
-	        tools.draw.string(context, spritesheet, 1, "Time Attack",{x: 55, y: 155});
+			var screen = data.menus[menuScreen];
+			var selected = screen.buttons[selectedButton];
+			// background
+	        tools.draw.image(context, data.sprites.menuBackground, 0, 0, 1);
+	        tools.draw.string(context, spritesheet, 1, screen.name,{x: data.render.width / 2, y: 0}, true);
+	        if(data.menus[selected] && data.menus[selected].description){
+		        tools.draw.string(context, spritesheet, 1, data.menus[selected].description, {x: data.render.width / 2, y: 200}, true);
+	        }
+	        
+	        //buttons
+	        var buttonPos = 40;
+	        for (var i = 0; i < screen.buttons.length; i++){
+	        	var button = screen.buttons[i];
+	        	var buttonScreen = data.menus[button];
+	        	var buttonState = (selectedButton === i)? 1 : 0;
+	        	
+	        	switch (buttonScreen.type){
+	        		case "standard":
+	        		case "final":
+	        			tools.draw.button(context, buttonState, {x: 60, y: buttonPos},200);
+	        			tools.draw.string(context, spritesheet, 1, data.menus[button].name,{x: data.render.width / 2, y: buttonPos + 6}, true);
+	        			buttonPos += 40;
+	        			break;
+	        		case "multipleChoice":
+	        			for (var j = 0; j < buttonScreen.choices.length; j++){
+	        				var choiceState = 0;
+	        				if(buttonState === 1 && j == buttonScreen.selected){
+	        					choiceState = 1;
+	        				} else if (j === buttonScreen.active) {
+	        					choiceState = 2;
+	        				}
+		        			tools.draw.button(context, choiceState, {x: 50 + 75*j, y: buttonPos},70);
+		        			tools.draw.string(context, spritesheet, 1, buttonScreen.choices[j],{x: 55 + 75*j, y: buttonPos + 6});
+	        			}
+	        			
+	        			buttonPos += 40;
+	        			break;
+	        		
+	        	}
+	        }
+	        if(menuBreadcrumb.length !== 0){
+	        	var buttonState = (selectedButton === i)? 1 : 0;
+		        tools.draw.button(context, buttonState, {x: 5, y: 205}, 45);
+				tools.draw.string(context, spritesheet, 1, "Back", {x: 10, y: 210});
+	        }
 		},
 		race : function(timestamp, delta){
 		       
@@ -396,7 +439,7 @@ var game = (function(){
 	        }
 		},
 		menu:  function(timestamp, delta){
-			if(keys[13] || UP.on){
+			/*if(keys[13] || UP.on){
 				changeState("race");
 	            startRace();
 	            context.globalAlpha = 1.0;
@@ -407,7 +450,8 @@ var game = (function(){
                         tools.playSound(audioContext, raceMusic);
                     })
                 }
-	        }
+	        }*/
+	        
 		},
 		race:  function(timestamp, delta){
 			var deltaT = delta / 30.0;
@@ -512,6 +556,69 @@ var game = (function(){
         }
         previousTimestamp = requestAnimationFrame.now();
     };
+        
+    // -------------------------------------
+    // ---      Async touch control      ---
+    // -------------------------------------
+    $(document).keydown(function(event){
+    	if(gameState === "menu"){
+			var screen = data.menus[menuScreen];
+			if (event.keyCode === 40) { // down
+	        	selectedButton += 1
+	        	if(menuBreadcrumb.length !== 0){
+	        		// if a back button exist
+	        		if (selectedButton > screen.buttons.length){
+		        		selectedButton = 0;
+		        	}
+	        	} else {
+	        		if (selectedButton >= screen.buttons.length){
+		        		selectedButton = 0;
+		        	}
+	        	}
+	        	
+		   } else if (event.keyCode === 38) { // up
+		    	selectedButton -= 1
+		    	if (selectedButton < 0){
+		    		selectedButton = screen.buttons.length - 1;
+		    	}
+		    	
+		   } else if (event.keyCode === 37) { // left
+		   		var buttonScreen = data.menus[screen.buttons[selectedButton]];
+		   		buttonScreen.selected -= 1;
+		   		if(buttonScreen.selected < 0){
+		   			buttonScreen.selected = buttonScreen.choices.length - 1;
+		   		}
+		   		
+		   } else if (event.keyCode === 39) { // right
+		   		var buttonScreen = data.menus[screen.buttons[selectedButton]];
+		   		buttonScreen.selected += 1;
+		   		if(buttonScreen.selected >= buttonScreen.choices.length){
+		   			buttonScreen.selected = buttonScreen.choices.length - 1;
+		   		}
+		   		
+		   } else if (event.keyCode === 13){ // enter
+		   		if(selectedButton === screen.buttons.length){
+		   			// back
+		   			menuScreen = menuBreadcrumb.pop();
+		   			selectedButton = 0;
+		   		} else {
+		   			var buttonScreen = data.menus[screen.buttons[selectedButton]];
+			   		switch (buttonScreen.type){
+		        		case "standard":
+		        		case "final":
+		        			menuBreadcrumb.push(menuScreen);
+							menuScreen = screen.buttons[selectedButton];
+							selectedButton = 0;
+		        			break;
+		        		case "multipleChoice":
+		        			buttonScreen.active = buttonScreen.selected;
+		        			break;
+		        	}
+		   		}
+		   		
+		   }
+    	}
+    })
         
     // -------------------------------------
     // ---         Touch control         ---

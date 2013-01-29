@@ -229,6 +229,69 @@ data.sprites = {
         y: 9,
         w: 11,
         h: 14
+    },
+    menuBackground: {
+    	x: 320,
+    	y: 293,
+    	w: 320,
+    	h: 240
+    },
+    buttonL: {
+    	x: 514,
+    	y: 168,
+    	w: 4,
+    	h: 26
+    }, 
+	buttonM: {
+    	x: 517,
+    	y: 168,
+    	w: 11,
+    	h: 26
+    },
+    buttonR: {
+    	x: 528,
+    	y: 168,
+    	w: 4,
+    	h: 26
+    },
+    activeL: {
+    	x: 512,
+    	y: 199,
+    	w: 6,
+    	h: 30
+    }, 
+	activeM: {
+    	x: 517,
+    	y: 199,
+    	w: 11,
+    	h: 30
+    },
+    activeR: {
+    	x: 528,
+    	y: 199,
+    	w: 6,
+    	h: 30
+    },
+    focusL: {
+    	x: 512,
+    	y: 230,
+    	w: 6,
+    	h: 30
+    }, 
+	focusM: {
+    	x: 517,
+    	y: 230,
+    	w: 11,
+    	h: 30
+    },
+    focusR: {
+    	x: 528,
+    	y: 230,
+    	w: 6,
+    	h: 30
+    },
+    icons: {
+    	
     }
 }
 
@@ -237,7 +300,69 @@ data.sounds = {
         intro: "music/ashtom_pixel-rave_(low).mp3",
         race:  "music/ashtom_bit-stream_(low).mp3"
     }
-}
+};
+
+data.menus = {
+	main: {
+		type: "standard",
+		name: "Main Menu",
+		description: "Play through a series\nof preselected races.",
+		buttons: ["championship","timeattack"]
+	},
+	championship: {
+		type: "standard",
+		name: "Championship",
+		icon: data.sprites.icons.cup,
+		description: "Play through a series\nof preselected races.",
+		buttons: ["championshipDifficulty","championshipStart"]
+	},
+	championshipDifficulty: {
+		type: "multipleChoice",
+		description: "Difficulty level.",
+		choices: ["Easy", "Medium", "Hard"],
+		selected: 1,
+		active: 1
+	},
+	championshipStart: {
+		type: "final",
+		name: "Start",
+		description: "Start championship."
+	},
+	timeattack: {
+		type: "standard",
+		name: "Time Attack",
+		icon: data.sprites.icons.chrono,
+		description: "Play one race against\nthe clock",
+		buttons: ["random","custom"]
+	},
+	random: {
+		type: "final",
+		name: "Random track",
+		icon: data.sprites.icons.interogation,
+		description: "Race on a randomly\ngenerated track.",
+		buttons: ["randomDifficulty","randomStart"]
+	},
+	randomDifficulty: {
+		type: "multipleChoice",
+		description: "Difficulty level.",
+		choices: ["Easy", "Medium", "Hard"],
+		selected: 1,
+		active: 1
+	},
+	randomStart: {
+		type: "final",
+		name: "Start",
+		description: "Start championship."
+	},
+	custom: {
+		type: "standard",
+		name: "Custom track",
+		icon: data.sprites.icons.custom,
+		description: "Configure you race\nin every details.",
+		buttons: ["randomDifficulty"]
+	}
+};
+
 
 data.render = {
     width: 320,
