@@ -145,7 +145,7 @@ tools.parseSeed = function(seed){
 	var racesType = ["desert", "forest", "swamp",  "dawn", "fog", "rain", "snow"];
 	
 	var level = {
-		random     : seed[0] + seed[1] * 36,
+		random     : toInt(seed[0]) * 36 + toInt(seed[1]),
 		type       : racesType[toInt(seed[2])],
 		length     : toInt(seed[3]) + 1,
 		curvy      : toInt(seed[4]) / 36.0,
@@ -164,7 +164,31 @@ tools.parseSeed = function(seed){
 }
 
 tools.generateSeed = function(options){
-	return "TODO";
+	var toChar = function(integer){
+		// '0' = 48 -> '9' = 57
+		// 'A' = 65 -> 'Z' = 90
+		if(integer < 9){
+			return ""+integer;
+		} else if (integer < 36){
+			return String.fromCharCode(integer - 10 + 65);
+		}
+	}
+	
+	if (options.random){
+		var r = new tools.r();
+		var seed = "";
+		seed += toChar(r.nextRange(0,36)) + toChar(r.nextRange(0,36)); // random part
+		seed += toChar(r.nextRange(0,2)); // the type of the race
+		seed += toChar(r.nextRange(0,1)); // the length TODO change this to 0 -> 36
+		seed += toChar(r.nextRange(0,36)); // the curvyness
+		seed += toChar(r.nextRange(0,36)); // the steepness
+		seed += toChar(r.nextRange(0,36)); // the density of the scenery
+		seed += toChar(r.nextRange(0,36)); // the difficulty
+		
+		return seed;
+	} else {
+		return "TODO";
+	}
 }
 
 tools.generateNextCheckpointTime = function(level, index){
@@ -580,7 +604,7 @@ tools.generateRoad = function(level){
 };
 
 tools.loadSound = function (audioContext, url, callback){
-    if(false/*audioContext*/){
+    if(audioContext){
         var request = new XMLHttpRequest();
         request.open('GET', url, true);
         request.responseType = 'arraybuffer';
@@ -601,7 +625,7 @@ tools.loadSound = function (audioContext, url, callback){
 }
 
 tools.playSound = function (audioContext, sound){
-    if(false/*audioContext*/){
+    if(audioContext){
         
         // volume control
         var gainNode = audioContext.createGainNode();

@@ -385,7 +385,45 @@ data.menus = {
 		icon: data.sprites.icons.custom,
 		description: "Configure you race\nin every details.",
 		buttons: ["randomDifficulty"]
-	}
+	},
+	wonrandom: {
+		type: "standard",
+		name: "You won the race!",
+		buttons: ["nextRandom","quit"]
+	},
+	lostrandom: {
+		type: "standard",
+		name: "You lost the race...",
+		buttons: ["retryRandom","quit"]
+	},
+	wonchampionship: {
+		type: "standard",
+		name: "You won the race!",
+		buttons: ["nextChampionship","quit"]
+	},
+	lostchampionship: {
+		type: "standard",
+		name: "You lost the race...",
+		buttons: ["retryChampionship","quit"]
+	},
+	quit: {
+		type: "final",
+		name: "Quit",
+		description: "Quit to main menu"
+	},
+	nextRandom: {
+		type: "final",
+		name: "New race",
+		description: "Generate a new race.",
+		gameMode: "random"
+	},
+	retryRandom: {
+		type: "final",
+		name: "Retry",
+		description: "Retry the same\nrace again.",
+		gameMode: "randomRestart"
+	}, 
+	
 };
 
 

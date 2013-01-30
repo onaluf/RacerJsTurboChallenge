@@ -22,29 +22,19 @@ var game = (function(){
     var menuBreadcrumb = [];
     var menuScreen = "main";
     var selectedButton = 0;
-    var activeButton = [];
     
-    var player = {
-        position: 10,
-        speed: 0,
-        acceleration: 0.05,
-        deceleration: 0.1,
-        breaking: 0.6,
-        turning: 5.0,
-        posx: 0,
-        maxSpeed: 15,
-        steering: 0,
-        immunity: 0
-    };
+    var player;
     
     var gameState;
     var gameMode;
     var soundReady = false;
+    var raceStarted = false;
     var seed = tools.parseHash();
     var road = [];
     var opponents = [];
 	var raceWon = false;
 	var raceLost = false;
+	var finishedTime;
 	var level;
 	
 	// touch vars
@@ -70,21 +60,43 @@ var game = (function(){
 		stateTimestamp = requestAnimationFrame.now();
 	};
 	
-	var prepareRace = function(){
-		level              = tools.parseSeed(seed);
+	var prepareRace = function(gameMode){
+		if(gameMode === "random"){
+			seed  = tools.generateSeed({random: true});
+			level = tools.parseSeed(seed);
+		} else if (gameMode === "randomRestart"){
+			level = tools.parseSeed(seed);
+		} else {
+			level = tools.parseSeed(seed);
+		}
 		var generated      = tools.generateRoad(level);	    
         road               = generated.road;
         opponents          = generated.opponents;
-        startTime          = requestAnimationFrame.now() - stateTimestamp;
+        //startTime          = requestAnimationFrame.now() - stateTimestamp;
 
         raceWon = false;
         raceLost = false;
+        raceStarted = false;
+        player = {
+	        position: 10,
+	        speed: 0,
+	        acceleration: 0.05,
+	        deceleration: 0.1,
+	        breaking: 0.6,
+	        turning: 5.0,
+	        posx: 0,
+	        maxSpeed: 15,
+	        steering: 0,
+	        immunity: 0
+	    };
 	}
 	
 	var startRace = function(){
 		// road generation
+		startTime          = requestAnimationFrame.now() - stateTimestamp;
         checkpointTime     = tools.generateNextCheckpointTime(level, 0);
 		lastCheckpointTime = startTime;
+		raceStarted = true;
 	};
 	
 	var render = function(timestamp){
@@ -137,7 +149,11 @@ var game = (function(){
 		}, 
 		menu : function (timestamp, delat){
 			var screen = data.menus[menuScreen];
-			var selected = screen.buttons[selectedButton];
+			var selected;
+			if(screen.buttons){
+				selected = screen.buttons[selectedButton];
+			}
+			
 			// background
 	        tools.draw.image(context, data.sprites.menuBackground, 0, 0, 1);
 	        tools.draw.string(context, spritesheet, 1, screen.name,{x: data.render.width / 2, y: 0}, true);
@@ -191,8 +207,7 @@ var game = (function(){
 		    tools.draw.string(context, spritesheet, 1, "Get Ready!", {x: data.render.width / 2, y: 180}, true);
 		},
 		race : function(timestamp, delta){
-		       
-	        // find the correct car sprite
+		    // find the correct car sprite
 	        var carSprite = {
                 a: data.sprites.car,
                 x: 125,
@@ -252,7 +267,12 @@ var game = (function(){
 	        // Opponent rendering variables 
 	        var opponentBuffer = [];
 	        var firstCarIndex = 0;
-	        var distanceDriven = 6.0 * (timestamp - startTime)/30.0;
+	        var opponentSpeed = ((timestamp - startTime < 10000)? (timestamp - startTime) / 10000 * 7 : 7.0);
+	        var distanceDriven = 0;
+	        if(raceStarted) {
+	        	distanceDriven = opponentSpeed * (timestamp - startTime)/30.0; // speed * time 
+	        }
+	        
 	        var checked = 0;
 	        var i = 0;
 	        if(player.immunity > 0){
@@ -342,7 +362,10 @@ var game = (function(){
 		        	i++;
 		        }
 	            while(i < opponents.length && opponents[i].start + checked + distanceDriven < (currentSegmentIndex + 1) * data.road.segmentSize){
-	            	var x = Math.cos(((timestamp - startTime)/2000 + opponents[i].phase) * Math.PI / 2) * 113;
+	            	var x = Math.cos(opponents[i].phase * Math.PI / 2) * 113;;
+	            	if(raceStarted){
+	            		x = Math.cos(((timestamp - startTime)/2000 + opponents[i].phase) * Math.PI / 2) * 113;
+	            	}
 	            	
 	            	if (player.immunity === 0 && iter < data.render.depthOfField - 3 && iter > data.render.depthOfField - 5){
 	            		if (Math.abs(x - lastDelta) < data.sprites.car.w - 5){
@@ -407,25 +430,46 @@ var game = (function(){
             	checkpointTime += remainingTime;
             	lastCheckpointTime = requestAnimationFrame.now() - startTime;
             } else {
-            	if (remainingTime < 0){
+            	if (!raceLost && remainingTime < 0){
             	    raceLost = true;
+            	    finishedTime = timestamp;
             	}
             }
             
 	        if(absoluteIndex >= road.length-data.render.depthOfField-1 && raceWon === false){
+	        	finishedTime = timestamp;
                 raceWon = player.position;
-            }
-            
-            if(raceLost !== false){
-            	tools.draw.string(context, spritesheet, 1, "Game Over!", {x: data.render.width / 2, y: 20}, true);
-            } else if (raceWon !== false){
-                tools.draw.string(context, spritesheet, 1, "Finished!", {x: data.render.width / 2, y: 20}, true);
-            } else {
-                tools.draw.string(context, spritesheet, 1, ""+remainingTime, {x: data.render.width / 2, y: 1});
             }
             
             var speed = Math.round(player.speed / player.maxSpeed * 420);
 	        tools.draw.string(context, spritesheet, 1, ""+speed+"kph", {x: 1, y: 1});
+	        
+	        if(timestamp < 4000){
+				// countdown phase
+				if (timestamp < 1000){
+					tools.draw.string(context, spritesheet, 1, "4", {x: data.render.width / 2, y: 1});
+				} else if (timestamp < 2000){
+					tools.draw.string(context, spritesheet, 1, "3", {x: data.render.width / 2, y: 1});
+				} else if (timestamp < 3000){
+					tools.draw.string(context, spritesheet, 1, "2", {x: data.render.width / 2, y: 1});
+				} else {
+					tools.draw.string(context, spritesheet, 1, "1", {x: data.render.width / 2, y: 1});
+				}
+			} else {
+				if(!raceStarted){
+					// start racing phase
+					startRace();
+				}
+				if(raceLost !== false){
+            	tools.draw.string(context, spritesheet, 1, "Game Over!", {x: data.render.width / 2, y: 20}, true);
+	            } else if (raceWon !== false){
+	                tools.draw.string(context, spritesheet, 1, "Finished!", {x: data.render.width / 2, y: 20}, true);
+	            } else if (timestamp < 5000){
+	            	tools.draw.string(context, spritesheet, 1, "GO!", {x: data.render.width / 2, y: 1});
+	            } else {
+	              	tools.draw.string(context, spritesheet, 1, ""+remainingTime, {x: data.render.width / 2, y: 1});
+	            }
+			}
 	        
 	        /*tools.draw.string(context, spritesheet, ""+Math.round(absoluteIndex/(road.length-data.render.depthOfField)*100)+"%",{x: 287, y: 1});
 	        var diff = timestamp - startTime;
@@ -450,7 +494,7 @@ var game = (function(){
 	var control = {
 		intro:  function(timestamp, delta){
 			if(keys[32] || UP.on){
-				changeState("menu")
+				changeState("menu");
 	        	context.globalAlpha = 1.0;
 	        	if(introMusic){
 	        	    introMusic.noteOff(0);
@@ -473,71 +517,84 @@ var game = (function(){
 		},
 		splash: function(timestamp, delta){
 		    if (timestamp > 2000 && soundReady){
-		        changeState("race");
-		        if(audioContext){
+		       changeState("race");
+		       if(audioContext){
                     tools.playSound(audioContext, raceMusic);
-                }
-		        startRace();
-		    };
+               }
+		    }
 		},
 		race:  function(timestamp, delta){
-			var deltaT = delta / 30.0;
-	        if(raceLost){
-	            // nothing ?
-	        } else if(raceWon){
-	            player.position += player.speed * deltaT;
-	            
-	        } else {
-		        // --------------------------
-		        // -- Update the car state --
-		        // --------------------------
-		        var acceleration = -player.deceleration;
-		        if (keys[40]) {
-		        	acceleration = -player.breaking;
-		        } else if (keys[38] || UP.on){
-		        	if (Math.abs(lastDelta) > 130 && player.speed > 5){
-		        		acceleration = -player.deceleration * 2;
-	        		} else {	        			
-		        		acceleration = player.acceleration;
-	        		} 
-		        }
-		        
-		        // car turning
-		        if (keys[37] || LEFT.on) {
-		            // 37 left
-		            player.steering -= 5;
-		            if(player.steering < -29){
-		            	player.steering = -29
+			if(raceStarted){
+				// countdown phase over
+				var deltaT = delta / 30.0;
+		        if(raceLost){
+		            // nothing ?
+		            if (timestamp - finishedTime > 2000){
+		            	menuScreen = "lost"+gameMode;
+		            	menuBreadcrumb = [];
+		            	changeState("menu");
+		            	selectedButton = 0;
 		            }
-		        } else if (keys[39] || RIGHT.on) {
-		            player.steering += 5;
-		        	if (player.steering > 29){
-		            	player.steering = 29
+		        } else if(raceWon){
+		            player.position += player.speed * deltaT;
+		            if (timestamp - finishedTime > 2000){
+		            	menuScreen = "won"+gameMode;
+		            	menuBreadcrumb = [];
+		            	changeState("menu");
+		            	selectedButton = 0;
 		            }
 		        } else {
-		        	if(player.steering !== 0){
-		        		if(Math.abs(player.steering) < 8){
-		        			player.steering = 0;
-		        		} else {
-			        		player.steering -= 8 * player.steering / Math.abs(player.steering);
-		        		}
-		        	}
+			        // --------------------------
+			        // -- Update the car state --
+			        // --------------------------
+			        var acceleration = -player.deceleration;
+			        if (keys[40]) {
+			        	acceleration = -player.breaking;
+			        } else if (keys[38] || UP.on){
+			        	if (Math.abs(lastDelta) > 130 && player.speed > 5){
+			        		acceleration = -player.deceleration * 2;
+		        		} else {	        			
+			        		acceleration = player.acceleration;
+		        		} 
+			        }
+			        
+			        // car turning
+			        if (keys[37] || LEFT.on) {
+			            // 37 left
+			            player.steering -= 5;
+			            if(player.steering < -29){
+			            	player.steering = -29
+			            }
+			        } else if (keys[39] || RIGHT.on) {
+			            player.steering += 5;
+			        	if (player.steering > 29){
+			            	player.steering = 29
+			            }
+			        } else {
+			        	if(player.steering !== 0){
+			        		if(Math.abs(player.steering) < 8){
+			        			player.steering = 0;
+			        		} else {
+				        		player.steering -= 8 * player.steering / Math.abs(player.steering);
+			        		}
+			        	}
+			        }
+			        
+			        // "Phyisc simulation"
+			        player.speed    += acceleration * deltaT;
+			        
+			        player.speed = Math.max(player.speed, 0); //cannot go in reverse
+			        player.speed = Math.min(player.speed, player.maxSpeed); //maximum speed
+					
+					var steeringBonus = 1.0;		        
+			        if(player.speed < 3){
+			        	steeringBonus = 9 - 3 * player.speed;
+			        }
+			        
+			        player.position += player.speed * deltaT //* Math.cos(Math.PI / 180 * player.steering);
+			        player.posx     += player.speed * deltaT * Math.sin(Math.PI / 180 * player.steering) * steeringBonus;
 		        }
-		        
-		        // "Phyisc simulation"
-		        player.speed    += acceleration * deltaT;
-		        
-		        player.speed = Math.max(player.speed, 0); //cannot go in reverse
-		        player.speed = Math.min(player.speed, player.maxSpeed); //maximum speed
-				
-				var steeringBonus = 1.0;		        
-		        if(player.speed < 3){
-		        	steeringBonus = 9 - 3 * player.speed;
-		        }
-		        
-		        player.position += player.speed * deltaT //* Math.cos(Math.PI / 180 * player.steering);
-		        player.posx     += player.speed * deltaT * Math.sin(Math.PI / 180 * player.steering) * steeringBonus;
-	        }
+		    }
 		}
 	};
     
@@ -640,16 +697,22 @@ var game = (function(){
 		        			buttonScreen.active = buttonScreen.selected;
 		        			break;
 		        		case "final":
-                            prepareRace();
-		        		    gameMode = screen.gameMode;
-		        		    changeState("splash");
-                            
-                            if(audioContext){
-                                tools.loadSound(audioContext, data.sounds.musics.race, function(sound){
-                                    raceMusic = sound;
-                                    soundReady = true;
-                                });
-                            }
+		        			if (screen.buttons[selectedButton] === "quit") {
+		        				menuScreen = "main";
+		        				selectedButton = 0;
+		        				
+		        			} else {
+	 		        		    gameMode =  data.menus[screen.buttons[selectedButton]].gameMode;
+	                            prepareRace(gameMode);
+			        		    changeState("splash");
+	                            
+	                            if(audioContext){
+	                                tools.loadSound(audioContext, data.sounds.musics.race, function(sound){
+	                                    raceMusic = sound;
+	                                    soundReady = true;
+	                                });
+	                            }
+		        			}
 		        		    break;
 		        	}
 		   		}
