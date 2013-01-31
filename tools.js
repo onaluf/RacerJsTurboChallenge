@@ -105,7 +105,7 @@ tools.r = function(seed) {
 tools.parseHash  = function(){
 	var defaultValue = {
 		//seed: "0001ZZZ0"
-		seed: "0011ZFZ0"
+		seed: "0121ZFA0"
 	}
 	// TODO this is just a test implementation, more to come
 	if (window.location.hash !== undefined && window.location.hash.length === 9) {
@@ -121,8 +121,8 @@ tools.parseHash  = function(){
 // 2) the type of the race:
 //     - '1': desert
 //     - '2': forest
-//     - '3': swamp
-//     - '4': dawn
+//     - '3': dawn
+//     - '4': swamp
 //     - '5': fog
 //     - '6': rain
 //     - '7': snow
@@ -142,7 +142,7 @@ tools.parseSeed = function(seed){
 		}
 		return int;
 	}
-	var racesType = ["desert", "forest", "swamp",  "dawn", "fog", "rain", "snow"];
+	var racesType = ["desert", "forest", "dawn", "swamp", "fog", "rain", "snow"];
 	
 	var level = {
 		random     : toInt(seed[0]) * 36 + toInt(seed[1]),
@@ -170,7 +170,7 @@ tools.generateSeed = function(options){
 		if(integer < 9){
 			return ""+integer;
 		} else if (integer < 36){
-			return String.fromCharCode(integer - 10 + 65);
+			return String.fromCharCode(integer - 9 + 65);
 		}
 	}
 	
@@ -178,7 +178,7 @@ tools.generateSeed = function(options){
 		var r = new tools.r();
 		var seed = "";
 		seed += toChar(r.nextRange(0,36)) + toChar(r.nextRange(0,36)); // random part
-		seed += toChar(r.nextRange(0,2)); // the type of the race
+		seed += toChar(r.nextRange(0,3)); // the type of the race
 		seed += toChar(r.nextRange(0,1)); // the length TODO change this to 0 -> 36
 		seed += toChar(r.nextRange(0,36)); // the curvyness
 		seed += toChar(r.nextRange(0,36)); // the steepness
