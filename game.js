@@ -36,6 +36,7 @@ var game = (function(){
 	var raceLost = false;
 	var finishedTime;
 	var level;
+	var currentLevel = 0;
 	
 	// touch vars
 	var UP = {
@@ -66,13 +67,15 @@ var game = (function(){
 			level = tools.parseSeed(seed);
 		} else if (gameMode === "randomRestart"){
 			level = tools.parseSeed(seed);
-		} else {
+		} else if (gameMode === "championship") {
+			seed = data.championship[currentLevel++]
+			level = tools.parseSeed(seed);
+		} else if (gameMode === "championshipRestart") {
 			level = tools.parseSeed(seed);
 		}
 		var generated      = tools.generateRoad(level);	    
         road               = generated.road;
         opponents          = generated.opponents;
-        //startTime          = requestAnimationFrame.now() - stateTimestamp;
 
         raceWon = false;
         raceLost = false;
@@ -201,8 +204,12 @@ var game = (function(){
 		splash: function (timestamp, delta) {
 		    tools.draw.image(context, data.levels[level.type].splash, 102, 62, 1);
 		    tools.draw.image(context, data.sprites.levelIntroBackground, 0, 0, 1);
-		    tools.draw.string(context, spritesheet, 1, "Championship", {x: data.render.width / 2, y: 20}, true);
-		    tools.draw.string(context, spritesheet, 1, "Stage 1/2 - Forest Level", {x: data.render.width / 2, y: 40}, true);
+		    if (gameMode === "championship"){
+			    tools.draw.string(context, spritesheet, 1, "Championship", {x: data.render.width / 2, y: 20}, true);
+			    tools.draw.string(context, spritesheet, 1, "Stage "+currentLevel+"/"+data.championship.length, {x: data.render.width / 2, y: 40}, true);
+		    } else {
+		    	tools.draw.string(context, spritesheet, 1, "Random", {x: data.render.width / 2, y: 20}, true);
+		    }
 		    tools.draw.string(context, spritesheet, 1, "Race: " + seed, {x: data.render.width / 2, y: 160}, true);
 		    tools.draw.string(context, spritesheet, 1, "Get Ready!", {x: data.render.width / 2, y: 180}, true);
 		},
@@ -533,14 +540,20 @@ var game = (function(){
 		            	menuScreen = "lost"+gameMode;
 		            	menuBreadcrumb = [];
 		            	changeState("menu");
+		            	raceMusic.noteOff(0);
 		            	selectedButton = 0;
 		            }
 		        } else if(raceWon){
 		            player.position += player.speed * deltaT;
 		            if (timestamp - finishedTime > 2000){
-		            	menuScreen = "won"+gameMode;
+		            	if(gameMode === "championship" && currentLevel === data.championship.length){
+		            		menuScreen = "finishedChampionship";
+		            	} else {
+		            		menuScreen = "won"+gameMode;
+		            	}
 		            	menuBreadcrumb = [];
 		            	changeState("menu");
+		            	raceMusic.noteOff(0);
 		            	selectedButton = 0;
 		            }
 		        } else {

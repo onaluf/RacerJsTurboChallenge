@@ -20,6 +20,10 @@ data.road = {
 }
 
 data.championship = [
+	"1216ZFZ0",
+	"6729ZFB0",
+	"A90HZF10",
+	"5H1GZFW0"
 ]
 
 //Level definition
@@ -330,7 +334,7 @@ data.menus = {
 		type: "standard",
 		name: "Main Menu",
 		description: "Play through a series\nof preselected races.",
-		buttons: ["championship","timeattack"]
+		buttons: ["championship","random"]
 	},
 	championship: {
 		type: "standard",
@@ -422,8 +426,24 @@ data.menus = {
 		name: "Retry",
 		description: "Retry the same\nrace again.",
 		gameMode: "randomRestart"
-	}, 
-	
+	},
+	nextChampionship: {
+		type: "final",
+		name: "Next race",
+		description: "Race the next stage.",
+		gameMode: "championship"
+	},
+	retryChampionship: {
+		type: "final",
+		name: "Retry",
+		description: "Retry the same\nrace again.",
+		gameMode: "championshipRestart"
+	},
+	finishedChampionship: {
+		type: "standard",
+		name: "You won the Championship!",
+		buttons: ["quit"]
+	}
 };
 
 
