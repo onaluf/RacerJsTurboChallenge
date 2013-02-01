@@ -133,14 +133,14 @@ tools.parseHash  = function(){
 // 6) the density of the scenery
 // 7) the difficulty (time or adversary)
 tools.parseSeed = function(seed){
-	var toInt = function(char){
+	var toInt = function(character){
 		// '0' = 48 -> '9' = 57
 		// 'A' = 65 -> 'Z' = 90
-		var int = char.charCodeAt(0) - 48;
-		if(int > 9) {
-			int -= 7;
+		var integer = character.charCodeAt(0) - 48;
+		if(integer > 9) {
+			integer -= 7;
 		}
-		return int;
+		return integer;
 	}
 	var racesType = ["desert", "forest", "dawn", "swamp", "fog", "rain", "snow"];
 	
