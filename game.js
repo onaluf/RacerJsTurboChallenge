@@ -37,6 +37,7 @@ var game = (function(){
 	var finishedTime;
 	var level;
 	var currentLevel = 0;
+	var checkpointIndex = 0;
 	
 	// touch vars
 	var UP = {
@@ -80,6 +81,7 @@ var game = (function(){
         raceWon = false;
         raceLost = false;
         raceStarted = false;
+        checkpointIndex = 0;
         player = {
 	        position: 10,
 	        speed: 0,
@@ -97,7 +99,7 @@ var game = (function(){
 	var startRace = function(){
 		// road generation
 		startTime          = requestAnimationFrame.now() - stateTimestamp;
-        checkpointTime     = tools.generateNextCheckpointTime(level, 0);
+        checkpointTime     = tools.generateNextCheckpointTime(level, checkpointIndex++);
 		lastCheckpointTime = startTime;
 		raceStarted = true;
 	};
@@ -204,7 +206,7 @@ var game = (function(){
 		splash: function (timestamp, delta) {
 		    tools.draw.image(context, data.levels[level.type].splash, 102, 62, 1);
 		    tools.draw.image(context, data.sprites.levelIntroBackground, 0, 0, 1);
-		    if (gameMode === "championship"){
+		    if (gameMode === "championship" || gameMode === "championshipRestart"){
 			    tools.draw.string(context, spritesheet, 1, "Championship", {x: data.render.width / 2, y: 20}, true);
 			    tools.draw.string(context, spritesheet, 1, "Stage "+currentLevel+"/"+data.championship.length, {x: data.render.width / 2, y: 40}, true);
 		    } else {
@@ -434,7 +436,7 @@ var game = (function(){
             var timePassed = timestamp - lastCheckpointTime;
             var remainingTime = checkpointTime - Math.floor(timePassed /1000);
             if(checkpointCrossed !== false){
-            	checkpointTime += remainingTime;
+            	checkpointTime = tools.generateNextCheckpointTime(level, checkpointIndex++) + remainingTime;
             	lastCheckpointTime = requestAnimationFrame.now() - startTime;
             } else {
             	if (!raceLost && remainingTime < 0){

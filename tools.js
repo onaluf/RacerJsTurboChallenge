@@ -192,7 +192,8 @@ tools.generateSeed = function(options){
 }
 
 tools.generateNextCheckpointTime = function(level, index){
-    return (1 - 0.1 * index) * level.numberOfZonesPerCheckpoints * data.road.zoneSize / 50;
+	level.numberOfCheckpoints
+    return Math.round((1 - 0.5 * index/level.numberOfCheckpoints) * level.numberOfZonesPerCheckpoints * data.road.zoneSize / 60);
 }
 
 // resize the canvas to make it take the full browser's window
@@ -450,9 +451,9 @@ tools.introScreens  = [
             tools.draw.image(context, data.intro.road, 0, 0, 1);
         },
         render:  function (context, percent){
-            tools.draw.string(context, spritesheet, 1, "Code & Art",{x: 115, y: 90});
-            tools.draw.string(context, spritesheet, 1, "by",{x: 152, y: 100});
-            tools.draw.string(context, spritesheet, 1, "Selim Arsever",{x: 105, y: 110});
+            tools.draw.string(context, spritesheet, 1, "Code & Art",{x: data.render.width/2, y: 90}, true);
+            tools.draw.string(context, spritesheet, 1, "by",{x: data.render.width/2, y: 100}, true);
+            tools.draw.string(context, spritesheet, 1, "Selim Arsever",{x: data.render.width/2, y: 110}, true);
         }
     },{
         duration: 4000,
@@ -462,9 +463,9 @@ tools.introScreens  = [
             tools.draw.image(context, data.intro.road, 0, 0, 1);
         },
         render:  function (context, percent){
-            tools.draw.string(context, spritesheet, 1, "Music",{x: 140, y: 90});
-            tools.draw.string(context, spritesheet, 1, "by",{x: 152, y: 100});
-            tools.draw.string(context, spritesheet, 1, "Ashtom",{x: 137, y: 110});
+            tools.draw.string(context, spritesheet, 1, "Music",{x: data.render.width/2, y: 90}, true);
+            tools.draw.string(context, spritesheet, 1, "by",{x: data.render.width/2, y: 100}, true);
+            tools.draw.string(context, spritesheet, 1, "Ashtom",{x: data.render.width/2, y: 110}, true);
         }
     },{
         duration: 4000,
@@ -474,9 +475,9 @@ tools.introScreens  = [
             tools.draw.image(context, data.intro.road, 0, 0, 1);
         },
         render:  function (context, percent){
-            tools.draw.string(context, spritesheet, 1, "Fonts",{x: 140, y: 90});
-            tools.draw.string(context, spritesheet, 1, "by",{x: 152, y: 100});
-            tools.draw.string(context, spritesheet, 1, "spicypixel.net",{x: 105, y: 110});
+            tools.draw.string(context, spritesheet, 1, "Fonts",{x: data.render.width/2, y: 90}, true);
+            tools.draw.string(context, spritesheet, 1, "by",{x: data.render.width/2, y: 100}, true);
+            tools.draw.string(context, spritesheet, 1, "underware.nl",{x: data.render.width/2, y: 110},true);
         }
     },{
         duration: 2000,
