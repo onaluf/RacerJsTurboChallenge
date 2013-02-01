@@ -116,6 +116,48 @@ data.levels = {
             w: 116,
             h: 66
         }
+    },
+    dawn : {
+        name: "Dawn",
+        background : {
+            x: 704,
+            y: 261,
+            w: 320,
+            h: 120
+        },
+        colors : {
+            sky     : "#cee6fd",
+            ground1 : "#56a877",
+            ground2 : "#4c9469",
+            road1   : "#999",
+            road2   : "#777",
+            border1 : "#eae824",
+            border2 : "#ccca1f"
+        },
+        sprites : [
+            {
+                x: 677,
+                y: 261,
+                w: 27,
+                h: 45
+            },{
+                x: 669,
+                y: 264,
+                w: 8,
+                h: 115
+            },{
+                x: 682,
+                y: 309,
+                w: 22,
+                h: 35
+            }
+        ],
+        splash: {
+            x: 640,
+            y: 381,
+            w: 116,
+            h: 66
+        }
     }
 }
 
