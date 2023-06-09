@@ -59,7 +59,7 @@ var game = (function(){
     // -----------------------------
 	var changeState = function(newState){
 		gameState      = newState;
-		stateTimestamp = requestAnimationFrame.now();
+		stateTimestamp = window.performance.now();
 	};
 	
 	var prepareRace = function(gameMode){
@@ -98,14 +98,13 @@ var game = (function(){
 	
 	var startRace = function(){
 		// road generation
-		startTime          = requestAnimationFrame.now() - stateTimestamp;
+		startTime          = window.performance.now() - stateTimestamp;
         checkpointTime     = tools.generateNextCheckpointTime(level, checkpointIndex++);
 		lastCheckpointTime = startTime;
 		raceStarted = true;
 	};
 	
 	var render = function(timestamp){
-		// var now = requestAnimationFrame.now();
 		window.requestAnimationFrame(render);
 		
 	    // scalling
@@ -437,7 +436,7 @@ var game = (function(){
             var remainingTime = checkpointTime - Math.floor(timePassed /1000);
             if(checkpointCrossed !== false){
             	checkpointTime = tools.generateNextCheckpointTime(level, checkpointIndex++) + remainingTime;
-            	lastCheckpointTime = requestAnimationFrame.now() - startTime;
+            	lastCheckpointTime = window.performance.now() - startTime;
             } else {
             	if (!raceLost && remainingTime < 0){
             	    raceLost = true;
@@ -526,10 +525,10 @@ var game = (function(){
 		},
 		splash: function(timestamp, delta){
 		    if (timestamp > 2000 && soundReady){
-		       changeState("race");
-		       if(audioContext){
-                    tools.playSound(audioContext, raceMusic);
-               }
+		        changeState("race");
+		        if(audioContext){
+								tools.playSound(audioContext, raceMusic);
+					  }
 		    }
 		},
 		race:  function(timestamp, delta){
@@ -616,7 +615,7 @@ var game = (function(){
     //initialize the game
     var init = function(){
         // configure canvas
-        domCanvas = $("#c")[0];
+        domCanvas = document.getElementById('c');
         domContext = domCanvas.getContext('2d');
         
         canvas = document.createElement("canvas");
@@ -637,29 +636,29 @@ var game = (function(){
         
         // pseudo full screen mode
         tools.canvasResize();
-        $(window).resize(tools.canvasResize);    
+				window.addEventListener('resize', tools.canvasResize, false);
         
         //register key handeling:
-        $(document).keydown(function(e){
-            keys[e.keyCode] = true;
-        });
-        $(document).keyup(function(e){
+				document.addEventListener('keydown', function(e){
+					keys[e.keyCode] = true;
+				}, false);
+				document.addEventListener('keyup', function(e){
             keys[e.keyCode] = false;
-        });
+        }, false);
         
         // retrieve the audio context
         try {
-            audioContext = new webkitAudioContext();
+            audioContext = new AudioContext();
         } catch(e) {
             // fail silenty
         }
-        previousTimestamp = requestAnimationFrame.now();
+        previousTimestamp = window.performance.now();
     };
         
     // -------------------------------------
     // ---      Async touch control      ---
     // -------------------------------------
-    $(document).keydown(function(event){
+    document.addEventListener('keydown', function(e) {
     	if(gameState === "menu"){
 			var screen = data.menus[menuScreen];
 			if (event.keyCode === 40) { // down
@@ -721,12 +720,14 @@ var game = (function(){
 	                            prepareRace(gameMode);
 			        		    changeState("splash");
 	                            
-	                            if(audioContext){
-	                                tools.loadSound(audioContext, data.sounds.musics.race, function(sound){
-	                                    raceMusic = sound;
-	                                    soundReady = true;
-	                                });
-	                            }
+											if(audioContext){
+													tools.loadSound(audioContext, data.sounds.musics.race, function(sound){
+															raceMusic = sound;
+															soundReady = true;
+													});
+											} else {
+												soundReady = true;
+											}
 		        			}
 		        		    break;
 		        	}
@@ -734,20 +735,19 @@ var game = (function(){
 		   		
 		   }
     	}
-    })
+    }, false);
         
     // -------------------------------------
     // ---         Touch control         ---
     // -------------------------------------
     document.addEventListener('touchstart', function(e) {
-    	e.preventDefault();
     	for (var i = 0; i < e.touches.length; i++){
 		    var touch = e.touches[i]
-		    if (touch.pageX < $(window).width()/3){
+		    if (touch.pageX <  window.innerWidth/3){
 		    	UP.on = true;
 		    	UP.id = touch.identifier;
-		    } else if (touch.pageX > $(window).width()/3 * 2){
-		    	if(touch.pageX < $(window).width()/6 * 5){
+		    } else if (touch.pageX >  window.innerWidth/3 * 2){
+		    	if(touch.pageX <  window.innerWidth/6 * 5){
 		    		LEFT.on = true;
 	    			LEFT.id = touch.identifier;
 		    	} else {
@@ -759,8 +759,6 @@ var game = (function(){
     	}
 	}, false);
 	document.addEventListener('touchend', function(e) {
-		e.preventDefault();
-		
 		for (var i = 0; i < e.changedTouches.length; i++){
 		    var touch = e.changedTouches[i]
 		    if (touch.identifier === UP.id){
@@ -797,6 +795,6 @@ var game = (function(){
         }
     }
 }());
-$(function(){
-    game.start();
+document.addEventListener('DOMContentLoaded', function() {
+		game.start();
 });

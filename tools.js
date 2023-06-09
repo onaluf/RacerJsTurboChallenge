@@ -8,66 +8,6 @@
 // namespace
 var tools = function(){};
 
-// RequestAnimationFrame polyfill by Johan Nordberg
-// (http://www.makeitgo.ws/articles/animationframe/)
-(function() {
-  var lastFrame, method, now, queue, requestAnimationFrame, timer, vendor, _i, _len, _ref, _ref1;
-  method = 'native';
-  now = Date.now || function() {
-    return new Date().getTime();
-  };
-  requestAnimationFrame = window.requestAnimationFrame;
-  _ref = ['webkit', 'moz', 'o', 'ms'];
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    vendor = _ref[_i];
-    if (!(requestAnimationFrame != null)) {
-      requestAnimationFrame = window[vendor + "RequestAnimationFrame"];
-    }
-  }
-  if (!(requestAnimationFrame != null)) {
-    method = 'timer';
-    lastFrame = 0;
-    queue = timer = null;
-    requestAnimationFrame = function(callback) {
-      var fire, nextFrame, time;
-      if (queue != null) {
-        queue.push(callback);
-        return;
-      }
-      time = now();
-      nextFrame = Math.max(0, 16.66 - (time - lastFrame));
-      queue = [callback];
-      lastFrame = time + nextFrame;
-      fire = function() {
-        var cb, q, _j, _len1;
-        q = queue;
-        queue = null;
-        for (_j = 0, _len1 = q.length; _j < _len1; _j++) {
-          cb = q[_j];
-          cb(lastFrame);
-        }
-      };
-      timer = setTimeout(fire, nextFrame);
-    };
-  }
-  requestAnimationFrame(function(time) {
-    var _ref1;
-    if ((((_ref1 = window.performance) != null ? _ref1.now : void 0) != null) && time < 1e12) {
-      requestAnimationFrame.now = function() {
-        return window.performance.now();
-      };
-      requestAnimationFrame.method = 'native-highres';
-    } else {
-      requestAnimationFrame.now = now;
-    }
-  });
-  requestAnimationFrame.now = ((_ref1 = window.performance) != null ? _ref1.now : void 0) != null ? (function() {
-    return window.performance.now();
-  }) : now;
-  requestAnimationFrame.method = method;
-  window.requestAnimationFrame = requestAnimationFrame;
-})();
-
 // LCG Pseudo Random Number Generator by orip
 // (http://stackoverflow.com/questions/424292/how-to-create-my-own-javascript-random-number-generator-that-i-can-also-set-the#424445)	
 tools.r = function(seed) {
@@ -198,27 +138,27 @@ tools.generateNextCheckpointTime = function(level, index){
 
 // resize the canvas to make it take the full browser's window
 tools.resize = function(){
-    if ($(window).width() / $(window).height() > data.render.width / data.render.height) {
-        var scale = $(window).height() / data.render.height;
+    if (window.innerWidth / window.innerHeight > data.render.width / data.render.height) {
+        var scale = window.innerHeight / data.render.height;
     }
     else {
-        var scale = $(window).width() / data.render.width;
+        var scale = window.innerWidth / data.render.width;
     }
     
     var transform = "scale(" + scale + ")";
-    $("#c").css("MozTransform", transform).css("transform", transform).css("WebkitTransform", transform).css({
-        top: (scale - 1) * data.render.height / 2,
-        left: (scale - 1) * data.render.width / 2 + ($(window).width() - data.render.width * scale) / 2
-    });
+    const c = document.getElementById('c');
+    c.style["transform"] = transform;
+    c.style.top = (scale - 1) * data.render.height / 2 + 'px';
+    c.style.left = (scale - 1) * data.render.width / 2 + (window.innerWidth - data.render.width * scale) / 2 + 'px';
 };
 
 tools.canvasResize = function(){
     ws = {
-        w: $(window).width(),
-        h: $(window).height()
+        w: window.innerWidth,
+        h: window.innerHeight
     }
     
-    var domCanvas = $("#c")[0];
+    var domCanvas = document.getElementById('c');
     var domContext = domCanvas.getContext('2d')
     var ratio = data.render.width / data.render.height;
     
@@ -236,11 +176,9 @@ tools.canvasResize = function(){
     domContext.webkitImageSmoothingEnabled = false;
     domContext.mozImageSmoothingEnabled = false;
     
-    
-    $("#c").css({
-        top: (ws.h - domCanvas.height) / 2,
-        left: (ws.w - domCanvas.width) / 2
-    });
+    const c = document.getElementById('c');
+    c.style.top = (ws.h - domCanvas.height) / 2 + 'px';
+    c.style.left = (ws.w - domCanvas.width) / 2 + 'px';
 }
 
 // Draw function: function that draw something on screen
